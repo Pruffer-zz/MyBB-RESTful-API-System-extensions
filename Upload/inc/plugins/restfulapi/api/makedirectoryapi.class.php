@@ -12,12 +12,12 @@ if(!defined("IN_MYBB"))
 /**
 This interface should be implemented by APIs, see VersionAPI for a simple example.
 */
-class FileReadAPI extends RESTfulAPI {
+class MakeDirectoryAPI extends RESTfulAPI {
 	
 	public function info() {
 		return array(
-			"name" => "File read",
-			"description" => "This API allows users to read files from a location specified in filereadapi.class.php.",
+			"name" => "Make directory",
+			"description" => "This API allows users to make directories in a location specified in makedirectoryapi.class.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -80,20 +80,17 @@ class FileReadAPI extends RESTfulAPI {
 		if ($phpContentType !== "application/json") {
 			$error = ("\"content-type\" header missing, or not \"application/json\"");
 		}
-		$realLocation = realpath($location.$phpLocation);
-		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory");
+		if (file_exists($location.$phpLocation)) {
+			$error = ("Directory / file already exists");
 		}
 		if ($error) {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if ($file = fopen($realLocation, "r")) {
-			$stdClass->contents = fread($file, filesize($realLocation));
-			fclose($file);
+		if (mkdir($location.$phpLocation)) {
 			$stdClass->result = returnSuccess($phpLocation);
 		} else {
-			$stdClass->result = returnError("File read failed");
+			$stdClass->result = returnError("Directory creation failed");
 		}
 		return $stdClass;
 	}

@@ -12,12 +12,12 @@ if(!defined("IN_MYBB"))
 /**
 This interface should be implemented by APIs, see VersionAPI for a simple example.
 */
-class FileReadAPI extends RESTfulAPI {
+class FileDeleteAPI extends RESTfulAPI {
 	
 	public function info() {
 		return array(
-			"name" => "File read",
-			"description" => "This API allows users to read files from a location specified in filereadapi.class.php.",
+			"name" => "File delete",
+			"description" => "This API allows users to delete files and directories from a location specified in filedeleteapi.class.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -80,20 +80,23 @@ class FileReadAPI extends RESTfulAPI {
 		if ($phpContentType !== "application/json") {
 			$error = ("\"content-type\" header missing, or not \"application/json\"");
 		}
-		$realLocation = realpath($location.$phpLocation);
-		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory");
-		}
 		if ($error) {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if ($file = fopen($realLocation, "r")) {
-			$stdClass->contents = fread($file, filesize($realLocation));
-			fclose($file);
-			$stdClass->result = returnSuccess($phpLocation);
+		$realLocation = realpath($location.$phpLocation);
+		if (is_dir($realLocation)) {
+			if (rmdir($realLocation)) {
+				$stdClass->result = returnSuccess($phpLocation);
+			} else {
+				$stdClass->result = returnError("Unable to delete directory");
+			}
 		} else {
-			$stdClass->result = returnError("File read failed");
+			if (unlink($realLocation)) {
+				$stdClass->result = returnSuccess($phpLocation);
+			} else {
+				$stdClass->result = returnError("Unable to delete file");
+			}
 		}
 		return $stdClass;
 	}

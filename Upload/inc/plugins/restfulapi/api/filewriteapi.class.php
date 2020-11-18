@@ -12,12 +12,12 @@ if(!defined("IN_MYBB"))
 /**
 This interface should be implemented by APIs, see VersionAPI for a simple example.
 */
-class FileReadAPI extends RESTfulAPI {
+class FileWriteAPI extends RESTfulAPI {
 	
 	public function info() {
 		return array(
-			"name" => "File read",
-			"description" => "This API allows users to read files from a location specified in filereadapi.class.php.",
+			"name" => "File write",
+			"description" => "This API allows users to write files to a location specified in filewriteapi.class.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -68,32 +68,48 @@ class FileReadAPI extends RESTfulAPI {
 			$stdClass->result = returnError("Invalid JSON data");
 			return $stdClass;
 		}
+		$phpContent = getKeyValue("content", $body);
 		$phpLocation = getKeyValue("location", $body);
+		$phpAppend = getKeyValue("append", $body);
+		$phpOverwrite = getKeyValue("overwrite", $body);
+		$phpFilename = getKeyValue("filename", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$location = "/path/to/fun/files/"; // Make sure to change this part, and include a trailing slash
 		if (!checkIfTraversal($location.$phpLocation, $location)) {
 			$error = ("Directory traversal check failed, or location doesn't exist");
 		}
-		if (!checkIfSetAndString($phpLocation)) {
+		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpContent) || !checkIfSetAndString($phpFilename)) {
 			$error = ("\"location\" key missing");
 		}
 		if ($phpContentType !== "application/json") {
 			$error = ("\"content-type\" header missing, or not \"application/json\"");
 		}
-		$realLocation = realpath($location.$phpLocation);
-		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory");
-		}
 		if ($error) {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if ($file = fopen($realLocation, "r")) {
-			$stdClass->contents = fread($file, filesize($realLocation));
-			fclose($file);
-			$stdClass->result = returnSuccess($phpLocation);
+		$realLocation = realpath($location.$phpLocation)."/";
+		if (is_dir($realLocation)) {
+			$error = ("Specified file is a directory");
+		}
+		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
+			$phpFilename = time().".".$phpFilename;
+			while (file_exists($realLocation.$phpFilename)) {
+				$phpFilename = substr(md5(microtime()),rand(0,26),5).time().".".$phpFilename;
+			}
+		}
+		if ($phpAppend === "yes") {
+			$writeMode = "a";
 		} else {
-			$stdClass->result = returnError("File read failed");
+			$writeMode = "w";
+		}
+		if ($file = fopen($realLocation.$phpFilename, $writeMode)) {
+			fwrite($file, $body->content);
+            fclose($file);
+			$stdClass->data = $body;
+			$stdClass->result = returnSuccess($phpFilename);
+		} else {
+			$stdClass->result = returnError("File write failed");
 		}
 		return $stdClass;
 	}

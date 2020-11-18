@@ -12,12 +12,12 @@ if(!defined("IN_MYBB"))
 /**
 This interface should be implemented by APIs, see VersionAPI for a simple example.
 */
-class FileReadAPI extends RESTfulAPI {
+class FileUploadAPI extends RESTfulAPI {
 	
 	public function info() {
 		return array(
-			"name" => "File read",
-			"description" => "This API allows users to read files from a location specified in filereadapi.class.php.",
+			"name" => "File upload",
+			"description" => "This API allows users to upload files to a location specified in fileuploadapi.class.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -55,6 +55,13 @@ class FileReadAPI extends RESTfulAPI {
 				return true;
 			}
 		}
+		function checkIfFilenameDirectory($filenamePath, $locationPath) {
+			if (realpath($filenamePath) === false || realpath($filenamePath) !== realpath($locationPath)) {
+				return false;
+			} else {
+				return true;
+			}
+		}
 		function checkIfSetAndString($var) {
 			if (isset($var) && is_string($var)) {
 				return true;
@@ -63,37 +70,47 @@ class FileReadAPI extends RESTfulAPI {
 			}
 		}
 		$stdClass = new stdClass();
-		$rawBody = file_get_contents("php://input");
+		$rawBody = $_POST["json"];
 		if (!($body = checkIfJson($rawBody))) {
 			$stdClass->result = returnError("Invalid JSON data");
 			return $stdClass;
 		}
 		$phpLocation = getKeyValue("location", $body);
+		$phpOverwrite = getKeyValue("overwrite", $body);
+		$phpFilename = getKeyValue("filename", $body);
+		$phpFile = $_FILES['file']['tmp_name'];
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$location = "/path/to/fun/files/"; // Make sure to change this part, and include a trailing slash
 		if (!checkIfTraversal($location.$phpLocation, $location)) {
 			$error = ("Directory traversal check failed, or location doesn't exist");
 		}
-		if (!checkIfSetAndString($phpLocation)) {
-			$error = ("\"location\" key missing");
+		if (!checkIfFilenameDirectory(dirname($location.$phpLocation.$phpFilename), $location.$phpLocation)) {
+			$error = ("\"filename\" key contains a directory");
 		}
-		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\"");
+		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpFilename)) {
+			$error = ("\"location\" or \"filename\" key missing");
 		}
-		$realLocation = realpath($location.$phpLocation);
-		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory");
+		if (!isset($_FILES['file'])) {
+			$error = ("\"file\" file missing");
+		}
+		if (!strpos($phpContentType, "multipart/form-data") === 0) {
+			$error = ("\"content-type\" header missing, or doesn't start with \"multipart/form-data\"");
 		}
 		if ($error) {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if ($file = fopen($realLocation, "r")) {
-			$stdClass->contents = fread($file, filesize($realLocation));
-			fclose($file);
-			$stdClass->result = returnSuccess($phpLocation);
+		$realLocation = realpath($location.$phpLocation)."/";
+		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
+			$phpFilename = time().".".$phpFilename;
+			while (file_exists($realLocation.$phpFilename)) {
+				$phpFilename = substr(md5(microtime()),rand(0,26),5).time().".".$phpFilename;
+			}
+		}
+		if (move_uploaded_file($phpFile, $realLocation.$phpFilename)) {
+			$stdClass->result = returnSuccess($phpFilename);
 		} else {
-			$stdClass->result = returnError("File read failed");
+			$stdClass->result = returnError("File write failed");
 		}
 		return $stdClass;
 	}
