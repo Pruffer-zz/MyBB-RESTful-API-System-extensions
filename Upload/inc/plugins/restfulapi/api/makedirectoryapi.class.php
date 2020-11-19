@@ -17,7 +17,7 @@ class MakeDirectoryAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "Make directory",
-			"description" => "This API allows users to make directories in a location specified in makedirectoryapi.class.php.",
+			"description" => "This API allows users to make directories in a location specified in config/filedirectoryconfig.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -26,42 +26,10 @@ class MakeDirectoryAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		function checkIfJson($body) {
-			if ($return = json_decode($body)) {
-				return $return;
-			} else {
-				return false;
-			}
-		}
-		function getKeyValue($key, $body) {
-			if ($returnKey = $body->$key) {
-				return $returnKey;
-			} else {
-				return false;
-			}
-		}
-		function returnError($message) {
-			return "Unsuccessful: ".$message;
-		}
-		function returnSuccess($message) {
-			return "Successful: ".$message;
-		}
-		function checkIfTraversal($path, $location) {
-			$realPath = realpath($path);
-			$realLocation = realpath($location);
-			if ($realPath === false || strpos($realPath, $realLocation) !== 0) {
-				return false;
-			} else {
-				return true;
-			}
-		}
-		function checkIfSetAndString($var) {
-			if (isset($var) && is_string($var)) {
-				return true;
-			} else {
-				return false;
-			}
-		}
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
+		$configFileLocation = include "inc/plugins/restfulapi/config/filedirectoryconfig.php";
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
@@ -70,9 +38,8 @@ class MakeDirectoryAPI extends RESTfulAPI {
 		}
 		$phpLocation = getKeyValue("location", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		$location = "/path/to/fun/files/"; // Make sure to change this part, and include a trailing slash
-		if (!checkIfTraversal($location.$phpLocation, $location)) {
-			$error = ("Directory traversal check failed, or location doesn't exist");
+		if (!checkIfTraversal(dirname($configFileLocation.$phpLocation), $configFileLocation)) {
+			$error = ("Directory traversal check failed, or parent directory doesn't exist");
 		}
 		if (!checkIfSetAndString($phpLocation)) {
 			$error = ("\"location\" key missing");
@@ -80,14 +47,14 @@ class MakeDirectoryAPI extends RESTfulAPI {
 		if ($phpContentType !== "application/json") {
 			$error = ("\"content-type\" header missing, or not \"application/json\"");
 		}
-		if (file_exists($location.$phpLocation)) {
+		if (file_exists($configFileLocation.$phpLocation)) {
 			$error = ("Directory / file already exists");
 		}
 		if ($error) {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if (mkdir($location.$phpLocation)) {
+		if (mkdir($configFileLocation.$phpLocation)) {
 			$stdClass->result = returnSuccess($phpLocation);
 		} else {
 			$stdClass->result = returnError("Directory creation failed");

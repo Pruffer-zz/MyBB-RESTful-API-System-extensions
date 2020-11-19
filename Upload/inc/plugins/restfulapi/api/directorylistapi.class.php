@@ -17,7 +17,7 @@ class DirectoryListAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "Directory list",
-			"description" => "This API allows users to list the contents of directories from a location specified in directorylistapi.class.php",
+			"description" => "This API allows users to list the contents of directories in a location specified in config/filedirectoryconfig.php.",
 			"default" => "deactivated"
 		);
 	}
@@ -26,42 +26,10 @@ class DirectoryListAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		function checkIfJson($body) {
-			if ($return = json_decode($body)) {
-				return $return;
-			} else {
-				return false;
-			}
-		}
-		function getKeyValue($key, $body) {
-			if ($returnKey = $body->$key) {
-				return $returnKey;
-			} else {
-				return false;
-			}
-		}
-		function returnError($message) {
-			return "Unsuccessful: ".$message;
-		}
-		function returnSuccess($message) {
-			return "Successful: ".$message;
-		}
-		function checkIfTraversal($path, $location) {
-			$realPath = realpath($path);
-			$realLocation = realpath($location);
-			if ($realPath === false || strpos($realPath, $realLocation) !== 0) {
-				return false;
-			} else {
-				return true;
-			}
-		}
-		function checkIfSetAndString($var) {
-			if (isset($var) && is_string($var)) {
-				return true;
-			} else {
-				return false;
-			}
-		}
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
+		$configFileLocation = include "inc/plugins/restfulapi/config/filedirectoryconfig.php";
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
@@ -70,8 +38,7 @@ class DirectoryListAPI extends RESTfulAPI {
 		}
 		$phpLocation = getKeyValue("location", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		$location = "/path/to/fun/files/"; // Make sure to change this part, and include a trailing slash
-		if (!checkIfTraversal($location.$phpLocation, $location)) {
+		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
 			$error = ("Directory traversal check failed, or location doesn't exist");
 		}
 		if (!checkIfSetAndString($phpLocation)) {
@@ -84,8 +51,8 @@ class DirectoryListAPI extends RESTfulAPI {
 			$stdClass->result = returnError($error);
 			return $stdClass;
 		}
-		if (is_dir($location.$phpLocation)) {
-			$stdClass->contents = scandir($location.$phpLocation);
+		if (is_dir($configFileLocation.$phpLocation)) {
+			$stdClass->contents = scandir($configFileLocation.$phpLocation);
 			$stdClass->result = returnSuccess($phpLocation);
 		} else {
 			$stdClass->result = returnError("Specified directory is a file");
