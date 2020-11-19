@@ -17,7 +17,7 @@ class FileDeleteAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "File delete",
-			"description" => "This API allows users to delete files and directories in location specified in config/filedirectoryconfig.php.",
+			"description" => "This API allows users to delete files and directories in a location specified in config/filedirectoryconfig.php.",
 			"default" => "deactivated"
 		);
 	}
