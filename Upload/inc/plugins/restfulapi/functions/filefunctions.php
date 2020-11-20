@@ -1,5 +1,4 @@
 <?php
-$fileFunctionsLocation = "/path/to/fun/files"; // Make sure to change this part, and include a trailing slash
 function checkIfTraversal($path, $location) {
 	$realPath = realpath($path);
 	$realLocation = realpath($location);
