@@ -2,4 +2,6 @@
 
 Extensions for MyBB-RESTful-API-System. Moved over from my fork.
 
-I'm most definitely not a security researcher, though-- if you absolutely need to use them, **make sure it's safe to do so first**.
+`restfulapi.php` file modified to add a setting for the new APIs.
+
+I'm most definitely not a security researcher, though. If you absolutely need to use these, **make sure it's safe to do so first**.
