@@ -17,7 +17,7 @@ class FileDeleteAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "File delete",
-			"description" => "This API allows users to delete files and directories in a location specified in config/filedirectoryconfig.php.",
+			"description" => "This API allows users to delete files and directories.",
 			"default" => "deactivated"
 		);
 	}
@@ -29,7 +29,7 @@ class FileDeleteAPI extends RESTfulAPI {
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
 		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
-		$configFileLocation = include "inc/plugins/restfulapi/config/filedirectoryconfig.php";
+		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {

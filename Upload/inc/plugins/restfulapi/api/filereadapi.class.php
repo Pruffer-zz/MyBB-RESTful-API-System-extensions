@@ -17,7 +17,7 @@ class FileReadAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "File read",
-			"description" => "This API allows users to read files from a location specified in config/filedirectoryconfig.php.",
+			"description" => "This API allows users to read files.",
 			"default" => "deactivated"
 		);
 	}
@@ -29,7 +29,7 @@ class FileReadAPI extends RESTfulAPI {
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
 		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
-		$configFileLocation = include "inc/plugins/restfulapi/config/filedirectoryconfig.php";
+		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {

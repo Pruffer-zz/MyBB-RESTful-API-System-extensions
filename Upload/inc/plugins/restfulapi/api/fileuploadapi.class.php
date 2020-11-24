@@ -17,7 +17,7 @@ class FileUploadAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "File upload",
-			"description" => "This API allows users to upload files to a location specified in config/filedirectoryconfig.php.",
+			"description" => "This API allows users to upload files.",
 			"default" => "deactivated"
 		);
 	}
@@ -29,7 +29,7 @@ class FileUploadAPI extends RESTfulAPI {
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
 		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
-		$configFileLocation = include "inc/plugins/restfulapi/config/filedirectoryconfig.php";
+		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = $_POST["json"];
 		if (!($body = checkIfJson($rawBody))) {
