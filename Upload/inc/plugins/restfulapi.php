@@ -3,6 +3,8 @@
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
  
+# Modified by Prüffer (avantheim.org)
+ 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
