@@ -2,7 +2,10 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-# 
+#
+
+# Extension released under the GPL-3.0 license by Prüffer (avantheim.org)
+
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -26,9 +29,9 @@ class FileWriteAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		include "inc/plugins/restfulapi/functions/filefunctions.php";
-		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
-		include "inc/plugins/restfulapi/functions/stringfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
