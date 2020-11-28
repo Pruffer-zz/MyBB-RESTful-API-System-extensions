@@ -26,6 +26,7 @@ class FileAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db, $lang;
+		$lang->load("api");
 		$api = APISystem::get_instance();
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
 		include "inc/plugins/restfulapi/functions/varfunctions.php";
