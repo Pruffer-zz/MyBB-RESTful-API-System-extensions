@@ -2,10 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-#
-
-# Extension released under the GPL-3.0 license by Prüffer (avantheim.org)
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -29,15 +26,14 @@ class FileDownloadAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/stringfunctions.php";
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
-			$stdClass->result = returnError("Invalid JSON data");
-			return $stdClass;
+			throw new BadRequestException("Invalid JSON data");
 		}
 		$phpFile = getKeyValue("file", $body);
 		$phpLocation = getKeyValue("location", $body);
@@ -45,20 +41,19 @@ class FileDownloadAPI extends RESTfulAPI {
 		$phpFilename = getKeyValue("filename", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist");
+			$error = ("Directory traversal check failed, or location doesn't exist.");
 		}
 		if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpLocation.$phpFilename), $configFileLocation.$phpLocation)) {
-			$error = ("\"filename\" key contains a directory");
+			$error = ("\"filename\" key contains a directory.");
 		}
 		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpFilename) || !checkIfSetAndString($phpFile)) {
-			$error = ("\"location\", \"filename\" or \"file\" key missing");
+			$error = ("\"location\", \"filename\" or \"file\" key missing.");
 		}
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\"");
+			$error = ("\"content-type\" header missing, or not \"application/json\".");
 		}
 		if ($error) {
-			$stdClass->result = returnError($error);
-			return $stdClass;
+			throw new BadRequestException($error);
 		}
 		$realLocation = realpath($configFileLocation.$phpLocation)."/";
 		$curl = curl_init();
@@ -78,7 +73,7 @@ class FileDownloadAPI extends RESTfulAPI {
 			fclose($file);
 			$stdClass->result = returnSuccess($phpFilename);
 		} else {
-			$stdClass->result = returnError("File write failed");
+			throw new BadRequestException("File write failed.");
 		}
 		return $stdClass;
 	}

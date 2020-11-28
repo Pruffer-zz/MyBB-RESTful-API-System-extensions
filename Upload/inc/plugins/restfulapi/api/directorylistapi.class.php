@@ -2,10 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-#
-
-# Extension released under the GPL-3.0 license by Prüffer (avantheim.org)
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -29,36 +26,34 @@ class DirectoryListAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/stringfunctions.php";
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
-			$stdClass->result = returnError("Invalid JSON data");
-			return $stdClass;
+			throw new BadRequestException("Invalid JSON data.");
 		}
 		$phpLocation = getKeyValue("location", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist");
+			$error = ("Directory traversal check failed, or location doesn't exist.");
 		}
 		if (!checkIfSetAndString($phpLocation)) {
-			$error = ("\"location\" key missing");
+			$error = ("\"location\" key missing.");
 		}
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\"");
+			$error = ("\"content-type\" header missing, or not \"application/json\".");
 		}
 		if ($error) {
-			$stdClass->result = returnError($error);
-			return $stdClass;
+			throw new BadRequestException($error);
 		}
 		if (is_dir($configFileLocation.$phpLocation)) {
 			$stdClass->contents = scandir($configFileLocation.$phpLocation);
 			$stdClass->result = returnSuccess($phpLocation);
 		} else {
-			$stdClass->result = returnError("Specified directory is a file");
+			throw new BadRequestException("Specified directory is a file.");
 		}
 		return $stdClass;
 	}

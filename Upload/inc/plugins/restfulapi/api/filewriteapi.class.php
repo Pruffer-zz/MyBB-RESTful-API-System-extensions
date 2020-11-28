@@ -2,10 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-#
-
-# Extension released under the GPL-3.0 license by Prüffer (avantheim.org)
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -29,15 +26,14 @@ class FileWriteAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/stringfunctions.php";
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
-			$stdClass->result = returnError("Invalid JSON data");
-			return $stdClass;
+			throw new BadRequestException("Invalid JSON data.");
 		}
 		$phpContent = getKeyValue("content", $body);
 		$phpLocation = getKeyValue("location", $body);
@@ -46,21 +42,20 @@ class FileWriteAPI extends RESTfulAPI {
 		$phpFilename = getKeyValue("filename", $body);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist");
+			$error = ("Directory traversal check failed, or location doesn't exist.");
 		}
 		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpContent) || !checkIfSetAndString($phpFilename)) {
-			$error = ("\"location\" key missing");
+			$error = ("\"location\" key missing.");
 		}
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\"");
-		}
-		if ($error) {
-			$stdClass->result = returnError($error);
-			return $stdClass;
+			$error = ("\"content-type\" header missing, or not \"application/json\".");
 		}
 		$realLocation = realpath($configFileLocation.$phpLocation)."/";
 		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory");
+			$error = ("Specified file is a directory.");
+		}
+		if ($error) {
+			throw new BadRequestException($error);
 		}
 		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
 			$phpFilename = time().".".$phpFilename;
@@ -79,7 +74,7 @@ class FileWriteAPI extends RESTfulAPI {
 			$stdClass->content = $phpContent;
 			$stdClass->result = returnSuccess($phpFilename);
 		} else {
-			$stdClass->result = returnError("File write failed");
+			throw new BadRequestException("File write failed.");
 		}
 		return $stdClass;
 	}

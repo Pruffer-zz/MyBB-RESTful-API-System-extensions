@@ -2,10 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-#
-
-# Extension released under the GPL-3.0 license by Prüffer (avantheim.org)
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -29,15 +26,14 @@ class FileUploadAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/stringfunctions.php";
+		include "inc/plugins/restfulapi/functions/filefunctions.php";
+		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
 		$rawBody = $_POST["json"];
 		if (!($body = checkIfJson($rawBody))) {
-			$stdClass->result = returnError("Invalid JSON data");
-			return $stdClass;
+			throw new BadRequestException("Invalid JSON data.");
 		}
 		$phpLocation = getKeyValue("location", $body);
 		$phpOverwrite = getKeyValue("overwrite", $body);
@@ -45,23 +41,22 @@ class FileUploadAPI extends RESTfulAPI {
 		$phpFile = $_FILES['file']['tmp_name'];
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist");
+			$error = ("Directory traversal check failed, or location doesn't exist.");
 		}
 		if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpLocation.$phpFilename), $configFileLocation.$phpLocation)) {
-			$error = ("\"filename\" key contains a directory");
+			$error = ("\"filename\" key contains a directory.");
 		}
 		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpFilename)) {
-			$error = ("\"location\" or \"filename\" key missing");
+			$error = ("\"location\" or \"filename\" key missing.");
 		}
 		if (!isset($_FILES['file'])) {
-			$error = ("\"file\" file missing");
+			$error = ("\"file\" file missing.");
 		}
 		if (!strpos($phpContentType, "multipart/form-data") === 0) {
-			$error = ("\"content-type\" header missing, or doesn't start with \"multipart/form-data\"");
+			$error = ("\"content-type\" header missing, or doesn't start with \"multipart/form-data\".");
 		}
 		if ($error) {
-			$stdClass->result = returnError($error);
-			return $stdClass;
+			throw new BadRequestException($error);
 		}
 		$realLocation = realpath($configFileLocation.$phpLocation)."/";
 		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
@@ -73,7 +68,7 @@ class FileUploadAPI extends RESTfulAPI {
 		if (move_uploaded_file($phpFile, $realLocation.$phpFilename)) {
 			$stdClass->result = returnSuccess($phpFilename);
 		} else {
-			$stdClass->result = returnError("File write failed");
+			throw new BadRequestException("File write failed.");
 		}
 		return $stdClass;
 	}
