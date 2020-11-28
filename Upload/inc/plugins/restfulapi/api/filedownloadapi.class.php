@@ -2,8 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-# Extension released by Prüffer (avantheim.org) under the GNU General Public License v3.0
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -28,51 +27,53 @@ class FileDownloadAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db;
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
-		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/varfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data");
+			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpFile = getKeyValue("file", $body);
-		$phpLocation = getKeyValue("location", $body);
-		$phpOverwrite = getKeyValue("overwrite", $body);
-		$phpFilename = getKeyValue("filename", $body);
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
+			}
+		}
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist.");
+		if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
+			throw new BadRequestException("Directory traversal check failed, or location doesn't exist.");
 		}
-		if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpLocation.$phpFilename), $configFileLocation.$phpLocation)) {
-			$error = ("\"filename\" key contains a directory.");
+		if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpData["location"].$phpData["filename"]), $configFileLocation.$phpData["location"])) {
+			throw new BadRequestException("\"filename\" key contains a directory.");
 		}
-		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpFilename) || !checkIfSetAndString($phpFile)) {
-			$error = ("\"location\", \"filename\" or \"file\" key missing.");
+		if (!checkIfSetAndString($phpData["location"]) || !checkIfSetAndString($phpData["filename"]) || !checkIfSetAndString($phpData["file"])) {
+			throw new BadRequestException("\"location\", \"filename\" or \"file\" key missing.");
 		}
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\".");
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
 		}
-		if ($error) {
-			throw new BadRequestException($error);
-		}
-		$realLocation = realpath($configFileLocation.$phpLocation)."/";
+		$realLocation = realpath($configFileLocation.$phpData["location"])."/";
 		$curl = curl_init();
-		curl_setopt($curl, CURLOPT_URL, $phpFile);
+		curl_setopt($curl, CURLOPT_URL, $phpData["file"]);
 		curl_setopt($curl, CURLOPT_HEADER, 0);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		$result = curl_exec($curl);
 		curl_close($curl);
-		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
-			$phpFilename = time().".".$phpFilename;
-			while (file_exists($realLocation.$phpFilename)) {
-				$phpFilename = substr(md5(microtime()),rand(0,26),5).time().".".$phpFilename;
+		if (file_exists($realLocation.$phpData["filename"]) && $phpData["overwrite"] === "no") {
+			$phpData["filename"] = time().".".$phpData["filename"];
+			while (file_exists($realLocation.$phpData["filename"])) {
+				$phpData["filename"] = substr(md5(microtime()),rand(0,26),5).time().".".$phpData["filename"];
 			}
 		}
-		if ($file = fopen($realLocation.$phpFilename, "w")) {
+		if ($file = fopen($realLocation.$phpData["filename"], "w")) {
 			fwrite($file, $result);
 			fclose($file);
-			$stdClass->result = returnSuccess($phpFilename);
+			$stdClass->result = returnSuccess($phpData["filename"]);
 		} else {
 			throw new BadRequestException("File write failed.");
 		}

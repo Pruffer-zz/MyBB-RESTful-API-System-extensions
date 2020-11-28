@@ -27,25 +27,31 @@ class DateAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpTimestamp = getKeyValue("timestamp", $body);
-		$phpTy = getKeyValue("ty", $body);
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
+			}
+		}
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if ($phpContentType !== "application/json") {
 			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\"");
 		}
 		$timestamp = "";
-		if(checkIfSetAndString($phpTimestamp)) {
-			$timestamp = (string) $phpTimestamp;
+		if(checkIfSetAndString($phpData["timestamp"])) {
+			$timestamp = (string) $phpData["timestamp"];
 		}
 		$ty = 1;
-		if(checkIfSetAndInArray($phpTy, array("0", "1"))) {
+		if(checkIfSetAndInArray($phpData["ty"], array("0", "1"))) {
 			$ty = (int) $mybb->input["ty"];
 		}
 		$stdClass->date = my_date($mybb->settings['dateformat'], $timestamp, "", $ty);

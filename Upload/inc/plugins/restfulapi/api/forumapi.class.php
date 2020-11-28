@@ -27,46 +27,49 @@ class ForumAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpAction = getKeyValue("action", $body);
-		$phpForumId = getKeyValue("forumid", $body);
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\".");
-		}
-		if(!checkIfSetAndString($phpAction)) {
-			$error = ("\"action\" key missing.");
-		}
-		if(checkIfSetAndString($phpForumId)) {
-			$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpForumId.'\'');
-			$queryResult = $db->fetch_array($query);
-			if (!$queryResult) {
-				$error = ("Forum ID doesn't exist.");
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
 			}
 		}
-		if ($error) {
-			throw new BadRequestException($error);
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
+		$phpContentType = $_SERVER["CONTENT_TYPE"];
+		if ($phpContentType !== "application/json") {
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
+		}
+		if(!checkIfSetAndString($phpData["action"])) {
+			throw new BadRequestException("\"action\" key missing.");
+		}
+		if(checkIfSetAndString($phpData["forumid"])) {
+			$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
+			$queryResult = $db->fetch_array($query);
+			if (!$queryResult) {
+				throw new BadRequestException("Forum ID doesn't exist.");
+			}
 		}
 		$forums = cache_forums();
-		switch (strtolower($phpAction)) {
+		switch (strtolower($phpData["action"])) {
 			case "list" :
-				if(checkIfSetAndString($phpForumId)) {
-					return (object) $forums[$phpForumId];
+				if(checkIfSetAndString($phpData["forumid"])) {
+					return (object) $forums[$phpData["forumid"]];
 				}
 				else {
 					return (object) $forums;
 				}
 			break;
 			case "threads" :
-				if(checkIfSetAndString($phpForumId)) {
+				if(checkIfSetAndString($phpData["forumid"])) {
 					$threads = array();
-					$fid = $db->escape_string($phpForumId);
+					$fid = $db->escape_string($phpData["forumid"]);
 					$query = $db->write_query("SELECT * FROM ".TABLE_PREFIX."threads t WHERE t.`fid` = '{$fid}'");
 					while($thread = $db->fetch_array($query)) {
 						$threads[$thread["tid"]] = $thread;
@@ -78,8 +81,8 @@ class ForumAPI extends RESTfulAPI {
 				}
 			break;
 			case "permissions" :
-				if(checkIfSetAndString($phpForumId) && $this->is_authenticated()) {
-					return (object) forum_permissions($phpForumId, $this->get_user()->id, $this->get_user()->usergroup);
+				if(checkIfSetAndString($phpData["forumid"]) && $this->is_authenticated()) {
+					return (object) forum_permissions($phpData["forumid"], $this->get_user()->id, $this->get_user()->usergroup);
 				}
 				else {
 					throw new BadRequestException("Unable to access specified forum ID.");

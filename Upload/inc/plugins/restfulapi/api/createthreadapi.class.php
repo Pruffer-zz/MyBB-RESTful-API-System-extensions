@@ -27,73 +27,66 @@ class CreateThreadAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		require_once MYBB_ROOT . 'inc/functions_post.php';
 		require_once MYBB_ROOT . '/inc/datahandlers/post.php';
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpSubject = getKeyValue("subject", $body);
-		$phpForumId = getKeyValue("forumid", $body);
-		$phpMessage = getKeyValue("message", $body);
-		$phpIpAddress = getKeyValue("ipaddress", $body);
-		$phpPrefix = getKeyValue("prefix", $body);
-		$phpIcon = getKeyValue("icon", $body);
-		$phpSaveDraft = getKeyValue("savedraft", $body);
-		$phpSubscriptionMetod = getKeyValue("subscriptionmethod", $body);
-		$phpSignature = getKeyValue("signature", $body);
-		$phpDisableSmilies = getKeyValue("disablesmilies", $body);
-		$phpModCloseThread = getKeyValue("modclosethread", $body);
-		$phpModStickThread = getKeyValue("modstickthread", $body);
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
+			}
+		}
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\"");
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\"");
 		}
-		if(!checkIfSetAndString($phpSubject) || !checkIfSetAndNumerical($phpForumId) || !checkIfSetAndString($phpMessage) || !checkIfSetAndString($phpIpAddress)) {
-			$error = ("\"subject\", \"id\", \"message\", or \"ipaddress\" keys missing or malformed");
+		if(!checkIfSetAndString($phpData["subject"]) || !checkIfSetAndNumerical($phpData["forumid"]) || !checkIfSetAndString($phpData["message"]) || !checkIfSetAndString($phpData["ipaddress"])) {
+			throw new BadRequestException("\"subject\", \"id\", \"message\", or \"ipaddress\" keys missing or malformed");
 		}
-		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpForumId.'\'');
+		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
 		$queryResult = $db->fetch_array($query);
 		if (!$queryResult) {
-			$error = ("Forum ID doesn't exist");
+			throw new BadRequestException("Forum ID doesn't exist");
 		}
-		if ($error) {
-			throw new BadRequestException($error);
-		}
-		$phpForumId = (int) $phpForumId;
-		$phpPrefix = checkIfSetAndString($phpPrefix) ? $phpPrefix : null;
-		$phpIcon = checkIfSetAndString($phpIcon) ? $phpIcon : null;
-		$phpSaveDraft = checkIfSetAndInArray($phpSaveDraft, array("1", "0")) ? (int) $phpSaveDraft : 0;
-		$phpSubscriptionMetod = checkIfSetAndInArray($phpSubscriptionMetod, array("", "none", "instant")) ? $phpSubscriptionMetod : "";
-		$phpSignature = checkIfSetAndInArray($phpSignature, array("1", "0")) ? (int) $phpSignature : 0;
-		$phpDisableSmilies = checkIfSetAndInArray($phpDisableSmilies, array("1", "0")) ? (int) $phpDisableSmilies : 0;
-		$phpModCloseThread = checkIfSetAndInArray($phpModCloseThread, array("1", "0")) ? (int) $phpModCloseThread : 0;
-		$phpModStickThread = checkIfSetAndInArray($phpModStickThread, array("1", "0")) ? (int) $phpModStickThread : 0;
+		$phpData["forumid"] = (int) $phpData["forumid"];
+		$phpData["prefix"] = checkIfSetAndString($phpData["prefix"]) ? $phpData["prefix"] : null;
+		$phpData["icon"] = checkIfSetAndString($phpData["icon"]) ? $phpData["icon"] : null;
+		$phpData["savedraft"] = checkIfSetAndInArray($phpData["savedraft"], array("1", "0")) ? (int) $phpData["savedraft"] : 0;
+		$phpData["subscriptionmethod"] = checkIfSetAndInArray($phpData["subscriptionmethod"], array("", "none", "instant")) ? $phpData["subscriptionmethod"] : "";
+		$phpData["signature"] = checkIfSetAndInArray($phpData["signature"], array("1", "0")) ? (int) $phpData["signature"] : 0;
+		$phpData["disablesmilies"] = checkIfSetAndInArray($phpData["disablesmilies"], array("1", "0")) ? (int) $phpData["disablesmilies"] : 0;
+		$phpData["modclosethread"] = checkIfSetAndInArray($phpData["modclosethread"], array("1", "0")) ? (int) $phpData["modclosethread"] : 0;
+		$phpData["modstickthread"] = checkIfSetAndInArray($phpData["modstickthread"], array("1", "0")) ? (int) $phpData["modstickthread"] : 0;
 		$posthandler = new PostDataHandler('insert');
 		$posthandler->action = 'thread';
 		$data = array(
 			"uid" => $this->get_user()->uid,
 			"username" => $this->get_user()->username,
-			"subject" => $phpSubject,
-			"fid" => $phpForumId,
-			"prefix" => $phpPrefix,
-			"message" => $phpMessage,
-			"ipaddress" => $phpIpAddress,
-			"icon" => $phpIcon,
-			"savedraft" => $phpSaveDraft,
+			"subject" => $phpData["subject"],
+			"fid" => $phpData["forumid"],
+			"prefix" => $phpData["prefix"],
+			"message" => $phpData["message"],
+			"ipaddress" => $phpData["ipaddress"],
+			"icon" => $phpData["icon"],
+			"savedraft" => $phpData["savedraft"],
 			"options" => array(
-				"subscriptionmethod" => $phpSubscriptionMetod,
-				"signature" => $phpSignature,
-				"disablesmilies" => $phpDisableSmilies,
+				"subscriptionmethod" => $phpData["subscriptionmethod"],
+				"signature" => $phpData["signature"],
+				"disablesmilies" => $phpData["disablesmilies"],
 			)
 		);
 		if(isset($this->get_user()->is_moderator) && $this->get_user()->is_moderator) {
 			$data[] = array(
-				"closethread" => $phpModCloseThread,
-				"stickthread" => $phpModStickThread
+				"closethread" => $phpData["modclosethread"],
+				"stickthread" => $phpData["modstickthread"]
 			);
 		}
 		$posthandler->set_data($data);

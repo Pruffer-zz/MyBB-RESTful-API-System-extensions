@@ -2,8 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-# Extension released by Prüffer (avantheim.org) under the GNU General Public License v3.0
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -28,35 +27,40 @@ class MakeDirectoryAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db;
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
-		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/varfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpLocation = getKeyValue("location", $body);
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if (!checkIfTraversal(dirname($configFileLocation.$phpLocation), $configFileLocation)) {
-			$error = ("Directory traversal check failed, or parent directory doesn't exist.");
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
+			}
 		}
-		if (!checkIfSetAndString($phpLocation)) {
-			$error = ("\"location\" key missing.");
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
+		$phpContentType = $_SERVER["CONTENT_TYPE"];
+		if (!checkIfTraversal(dirname($configFileLocation.$phpData["location"]), $configFileLocation)) {
+			throw new BadRequestException("Directory traversal check failed, or parent directory doesn't exist.");
+		}
+		if (!checkIfSetAndString($phpData["location"])) {
+			throw new BadRequestException("\"location\" key missing.");
 		}
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\".");
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
 		}
-		if (file_exists($configFileLocation.$phpLocation)) {
-			$error = ("Directory / file already exists.");
+		if (file_exists($configFileLocation.$phpData["location"])) {
+			throw new BadRequestException("Directory / file already exists.");
 		}
-		if ($error) {
-			throw new BadRequestException($error);
-		}
-		if (mkdir($configFileLocation.$phpLocation)) {
-			$stdClass->result = returnSuccess($phpLocation);
+		if (mkdir($configFileLocation.$phpData["location"])) {
+			$stdClass->result = returnSuccess($phpData["location"]);
 		} else {
-			throw new BadRequestException("Directory creation failed");
+			throw new BadRequestException("Directory creation failed.");
 		}
 		return $stdClass;
 	}

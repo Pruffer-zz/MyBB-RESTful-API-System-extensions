@@ -2,8 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-# Extension released by Prüffer (avantheim.org) under the GNU General Public License v3.0
-
+# 
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
@@ -28,52 +27,53 @@ class FileWriteAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db;
 		include "inc/plugins/restfulapi/functions/filefunctions.php";
-		include "inc/plugins/restfulapi/functions/jsonfunctions.php";
+		include "inc/plugins/restfulapi/functions/varfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpContent = getKeyValue("content", $body);
-		$phpLocation = getKeyValue("location", $body);
-		$phpAppend = getKeyValue("append", $body);
-		$phpOverwrite = getKeyValue("overwrite", $body);
-		$phpFilename = getKeyValue("filename", $body);
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if (!checkIfTraversal($configFileLocation.$phpLocation, $configFileLocation)) {
-			$error = ("Directory traversal check failed, or location doesn't exist.");
-		}
-		if (!checkIfSetAndString($phpLocation) || !checkIfSetAndString($phpContent) || !checkIfSetAndString($phpFilename)) {
-			$error = ("\"location\" key missing.");
-		}
-		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\".");
-		}
-		$realLocation = realpath($configFileLocation.$phpLocation)."/";
-		if (is_dir($realLocation)) {
-			$error = ("Specified file is a directory.");
-		}
-		if ($error) {
-			throw new BadRequestException($error);
-		}
-		if (file_exists($realLocation.$phpFilename) && $phpOverwrite === "no") {
-			$phpFilename = time().".".$phpFilename;
-			while (file_exists($realLocation.$phpFilename)) {
-				$phpFilename = substr(md5(microtime()),rand(0,26),5).time().".".$phpFilename;
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
 			}
 		}
-		if ($phpAppend === "yes") {
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
+		$phpContentType = $_SERVER["CONTENT_TYPE"];
+		if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
+			throw new BadRequestException("Directory traversal check failed, or location doesn't exist.");
+		}
+		if (!checkIfSetAndString($phpData["location"]) || !checkIfSetAndString($phpData["content"]) || !checkIfSetAndString($phpData["location"])) {
+			throw new BadRequestException("\"location\" key missing.");
+		}
+		if ($phpContentType !== "application/json") {
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
+		}
+		$realLocation = realpath($configFileLocation.$phpData["location"])."/";
+		if (is_dir($realLocation)) {
+			throw new BadRequestException("Specified file is a directory.");
+		}
+		if (file_exists($realLocation.$phpData["location"]) && $phpData["overwrite"] === "no") {
+			$phpData["location"] = time().".".$phpData["location"];
+			while (file_exists($realLocation.$phpData["location"])) {
+				$phpData["location"] = substr(md5(microtime()),rand(0,26),5).time().".".$phpData["location"];
+			}
+		}
+		if ($phpData["append"] === "yes") {
 			$writeMode = "a";
 		} else {
 			$writeMode = "w";
 		}
-		if ($file = fopen($realLocation.$phpFilename, $writeMode)) {
-			fwrite($file, $phpContent);
+		if ($file = fopen($realLocation.$phpData["location"], $writeMode)) {
+			fwrite($file, $phpData["content"]);
             fclose($file);
-			$stdClass->content = $phpContent;
-			$stdClass->result = returnSuccess($phpFilename);
+			$stdClass->content = $phpData["content"];
+			$stdClass->result = returnSuccess($phpData["location"]);
 		} else {
 			throw new BadRequestException("File write failed.");
 		}

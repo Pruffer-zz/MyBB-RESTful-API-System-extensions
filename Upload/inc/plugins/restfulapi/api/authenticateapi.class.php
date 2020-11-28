@@ -27,29 +27,33 @@ class AuthenticateAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsonfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
+		$phpData = array();
 		$rawBody = file_get_contents("php://input");
 		if (!($body = checkIfJson($rawBody))) {
 			throw new BadRequestException("Invalid JSON data.");
 		}
-		$phpSessionId = getKeyValue("sessionid", $body);
+		try {
+			foreach($body as $key=>$data) {
+				$phpData[$key] = $data;
+			}
+		}
+		catch (Exception $e) {
+			throw new BadRequestException("Unable to read JSON data.");
+		}
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		if ($phpContentType !== "application/json") {
-			$error = ("\"content-type\" header missing, or not \"application/json\".");
+			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
 		}
-		if(!checkIfSetAndString($phpSessionId)) {
-			$error = ("\"action\" key missing.");
-		}
-		if ($error) {
-			throw new BadRequestException($error);
+		if(!checkIfSetAndString($phpData["sessionid"])) {
+			throw new BadRequestException("\"action\" key missing.");
 		}
 		if($this->is_authenticated()) {
 			return $this->get_user();
 		}
-		elseif(isset($phpSessionId) && is_string($phpSessionId)) {
-			$sid = $db->escape_string($phpSessionId);
+		elseif(checkIfSetAndString($phpData["sessionid"])){
+			$sid = $db->escape_string($phpData["sessionid"]);
 			$query = $db->query("SELECT s.uid FROM " . TABLE_PREFIX . "sessions s WHERE s.sid = '{$sid}'");
 			$result = $db->fetch_array($query);
 			if(empty($result)) {
@@ -66,7 +70,7 @@ class AuthenticateAPI extends RESTfulAPI {
 				");
 				$user = (object) $db->fetch_array($query);
 				if(empty($user)) {
-					throw new UnauthorizedException("Not connected");
+					throw new UnauthorizedException("Not connected.");
 				}
 				$user->ismoderator = is_moderator("", "", $uid);
 				return $user;
