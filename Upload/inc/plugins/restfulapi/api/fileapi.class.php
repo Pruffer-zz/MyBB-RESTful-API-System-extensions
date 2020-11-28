@@ -2,7 +2,8 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
-# 
+# Extensions released by Prüffer (avantheim.org) under GNU GPLv3
+
 // Disallow direct access to this file for security reasons
 if(!defined("IN_MYBB"))
 {
