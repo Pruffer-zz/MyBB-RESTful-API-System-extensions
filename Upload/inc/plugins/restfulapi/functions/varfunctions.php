@@ -13,6 +13,13 @@ function checkIfSetAndInArray($var, $array) {
 		return false;
 	}
 }
+function checkIfKeySetAndInArray($var, $array) {
+	if (isset($var) && array_key_exists($var, $array)) {
+		return true;
+	} else {
+		return false;
+	}
+}
 function checkIfSetAndNumerical($var) {
 	if (isset($var) && is_numeric($var)) {
 		return true;
