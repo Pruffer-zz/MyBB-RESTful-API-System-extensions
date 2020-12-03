@@ -18,7 +18,7 @@ class DateAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "Date",
-			"description" => "This API exposes date utility, very useful for external systems.",
+			"description" => "This API exposes the date interface.",
 			"default" => "activated"
 		);
 	}
@@ -28,24 +28,9 @@ class DateAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb;
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
-		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\"");
-		}
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"]);
 		$timestamp = "";
 		if(checkIfSetAndString($phpData["timestamp"])) {
 			$timestamp = (string) $phpData["timestamp"];

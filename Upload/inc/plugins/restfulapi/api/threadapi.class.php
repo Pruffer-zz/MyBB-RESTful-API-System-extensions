@@ -28,41 +28,16 @@ class ThreadAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db;
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
-		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
-		}
-		if(!checkIfSetAndString($phpData["action"])) {
-			throw new BadRequestException("\"action\" key missing.");
-		}
-		if(checkIfSetAndString($phpData["threadid"])) {
-			$query = $db->simple_select('threads', 'tid', 'tid=\''.$phpData["threadid"].'\'');
-			$queryResult = $db->fetch_array($query);
-			if (!$queryResult) {
-				throw new BadRequestException("Thread ID doesn't exist.");
-			}
-		}
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		switch (strtolower($phpData["action"])) {
 			case "list" :
 				if(checkIfSetAndString($phpData["threadid"]) && isset($forums[$phpData["threadid"]])) {
 					return (object) $forums[$phpData["threadid"]];
 				}
 				else {
-					return (object) $forums;
+					throw new BadRequestException($lang->api_id_not_specified);
 				}
 			break;
 			case "posts" :
@@ -74,17 +49,16 @@ class ThreadAPI extends RESTfulAPI {
 						$posts[$post["pid"]] = $post;
 					}
 					return (object) $posts;
-				}
-				else {
-					throw new BadRequestException("No thread ID specified.");
+				} else {
+					throw new BadRequestException($lang->api_id_not_specified);
 				}
 			break;
 			case "permissions" :
 				$forumpermissions = forum_permissions();
 				return (object) $forumpermissions;
 			default:
+                throw new BadRequestException($lang->api_no_valid_action_specified);
 			break;
 		}
-		throw new BadRequestException("No valid option given in the URL.");
 	}
 }

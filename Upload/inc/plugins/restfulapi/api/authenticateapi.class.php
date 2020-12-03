@@ -26,29 +26,12 @@ class AuthenticateAPI extends RESTfulAPI {
 	This is where you perform the action when the API is called, the parameter given is an instance of stdClass, this method should return an instance of stdClass.
 	*/
 	public function action() {
-		global $mybb, $db;
+		global $mybb, $db, $lang;
+		$lang->load("api");
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
-		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
-		}
-		if(!checkIfSetAndString($phpData["sessionid"])) {
-			throw new BadRequestException("\"action\" key missing.");
-		}
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("sessionid"));
 		if($this->is_authenticated()) {
 			return $this->get_user();
 		}
@@ -57,7 +40,7 @@ class AuthenticateAPI extends RESTfulAPI {
 			$query = $db->query("SELECT s.uid FROM " . TABLE_PREFIX . "sessions s WHERE s.sid = '{$sid}'");
 			$result = $db->fetch_array($query);
 			if(empty($result)) {
-				throw new UnauthorizedException("Not connected.");
+				throw new UnauthorizedException($lang->api_not_connected);
 			}
 			else {
 				$uid = $result['uid'];
@@ -70,14 +53,13 @@ class AuthenticateAPI extends RESTfulAPI {
 				");
 				$user = (object) $db->fetch_array($query);
 				if(empty($user)) {
-					throw new UnauthorizedException("Not connected.");
+					throw new UnauthorizedException($lang->api_not_connected);
 				}
 				$user->ismoderator = is_moderator("", "", $uid);
 				return $user;
 			}
-		}
-		else {
-			throw new UnauthorizedException("Not connected.");
+		} else {
+			throw new UnauthorizedException($lang->api_not_connected);
 		}
 	}
 }

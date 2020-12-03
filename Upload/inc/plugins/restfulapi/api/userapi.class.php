@@ -26,29 +26,12 @@ class UserAPI extends RESTfulAPI {
 	This is where you perform the action when the API is called, the parameter given is an instance of stdClass, this method should return an instance of stdClass.
 	*/
 	public function action() {
-		global $mybb, $db, $cache;
+		global $mybb, $db, $cache, $lang;
+		$lang->load("api");
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
-		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
-		}
-		if(!checkIfSetAndString($phpData["action"])) {
-			throw new BadRequestException("\"action\" key missing.");
-		}
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		switch(strtolower($phpData["action"])) {
 			case "list" :
 			if($phpData["sort"])
@@ -62,24 +45,24 @@ class UserAPI extends RESTfulAPI {
 			switch($phpData["sort"])
 			{
 				case "regdate":
-					$sort_field = "u.regdate";
-					break;
+					$sortField = "u.regdate";
+				break;
 				case "lastvisit":
-					$sort_field = "u.lastactive";
-					break;
+					$sortField = "u.lastactive";
+				break;
 				case "reputation":
-					$sort_field = "u.reputation";
-					break;
+					$sortField = "u.reputation";
+				break;
 				case "postnum":
-					$sort_field = "u.postnum";
-					break;
+					$sortField = "u.postnum";
+				break;
 				case "referrals":
-					$sort_field = "u.referrals";
-					break;
+					$sortField = "u.referrals";
+				break;
 				default:
-					$sort_field = "u.username";
+					$sortField = "u.username";
 					$phpData["sort"] = 'username';
-					break;
+				break;
 			}
 			if($phpData["order"])
 			{
@@ -91,64 +74,64 @@ class UserAPI extends RESTfulAPI {
 			}
 			if($phpData["order"] == "ascending" || (!$phpData["order"] && $phpData["sort"] == 'username'))
 			{
-				$sort_order = "ASC";
+				$sortOrder = "ASC";
 				$phpData["order"] = "ascending";
 			}
 			else
 			{
-				$sort_order = "DESC";
+				$sortOrder = "DESC";
 				$phpData["order"] = "descending";
 			}
 			$phpData["perpage"] = intval($phpData["perpage"]);
 			if($phpData["perpage"] > 0 && $phpData["perpage"] <= 500)
 			{
-				$per_page = $phpData["perpage"];
+				$perPage = $phpData["perpage"];
 			}
 			else if($mybb->settings['membersperpage'])
 			{
-				$per_page = $phpData["perpage"] = intval($mybb->settings['membersperpage']);
+				$perPage = $phpData["perpage"] = intval($mybb->settings['membersperpage']);
 			}
 			else
 			{
-				$per_page = $phpData["perpage"] = 20;
+				$perPage = $phpData["perpage"] = 20;
 			}
-			$search_query = '1=1';
+			$searchQuery = '1=1';
 			if($phpData["letter"])
 			{
 				$letter = chr(ord($phpData["letter"]));
 				if($phpData["letter"] == -1)
 				{
-					$search_query .= " AND u.username NOT REGEXP('[a-zA-Z]')";
+					$searchQuery .= " AND u.username NOT REGEXP('[a-zA-Z]')";
 				}
 				else if(strlen($letter) == 1)
 				{
-					$search_query .= " AND u.username LIKE '".$db->escape_string_like($letter)."%'";
+					$searchQuery .= " AND u.username LIKE '".$db->escape_string_like($letter)."%'";
 				}
 			}
-			$search_username = htmlspecialchars_uni(trim($phpData["username"]));
-			if($search_username != '')
+			$searchUsername = htmlspecialchars_uni(trim($phpData["username"]));
+			if($searchUsername != '')
 			{
-				$username_like_query = $db->escape_string_like($search_username);
+				$usernameLikeQuery = $db->escape_string_like($searchUsername);
 				if($phpData["usernamematch"] == "begins")
 				{
-					$search_query .= " AND u.username LIKE '".$username_like_query."%'";
+					$searchQuery .= " AND u.username LIKE '".$usernameLikeQuery."%'";
 				}
 				else
 				{
-					$search_query .= " AND u.username LIKE '%".$username_like_query."%'";
+					$searchQuery .= " AND u.username LIKE '%".$usernameLikeQuery."%'";
 				}
 			}
-			$search_website = htmlspecialchars_uni($phpData["website"]);
+			$searchWebsite = htmlspecialchars_uni($phpData["website"]);
 			if(trim($phpData["website"]))
 			{
-				$search_query .= " AND u.website LIKE '%".$db->escape_string_like($phpData["website"])."%'";
+				$searchQuery .= " AND u.website LIKE '%".$db->escape_string_like($phpData["website"])."%'";
 			}
-			$query = $db->simple_select("users u", "COUNT(*) AS users", "{$search_query}");
-			$num_users = $db->fetch_field($query, "users");
+			$query = $db->simple_select("users u", "COUNT(*) AS users", "{$searchQuery}");
+			$usersNumber = $db->fetch_field($query, "users");
 			$page = intval($phpData["page"]);
 			if($page && $page > 0)
 			{
-				$start = ($page - 1) * $per_page;
+				$start = ($page - 1) * $perPage;
 			}
 			else
 			{
@@ -159,26 +142,18 @@ class UserAPI extends RESTfulAPI {
 				SELECT u.*, f.*
 				FROM ".TABLE_PREFIX."users u
 				LEFT JOIN ".TABLE_PREFIX."userfields f ON (f.ufid=u.uid)
-				WHERE {$search_query}
-				ORDER BY {$sort_field} {$sort_order}
-				LIMIT {$start}, {$per_page}
+				WHERE {$searchQuery}
+				ORDER BY {$sortField} {$sortOrder}
+				LIMIT {$start}, {$perPage}
 			");
-			$return_array = new stdClass();
-			$return_array->list = array();
+			$returnArray = new stdClass();
+			$returnArray->list = array();
 			while($user = $db->fetch_array($query)) {
-				$return_array->list[] = $user;
+				$returnArray->list[] = $user;
 			}
-			$return_array->count = $num_users;
-			return $return_array;
-			break;
-			case "group" :
-			$usergroups = $cache->read("usergroups");
-			return array_values($usergroups);
-			break;
-			default :
-			break;
+			$returnArray->count = $usersNumber;
+			return $returnArray;
 		}
-		throw new BadRequestException("No valid option given in the URL.");
 	}
 	
 	private function action_list() {

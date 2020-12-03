@@ -26,35 +26,18 @@ class CreateThreadAPI extends RESTfulAPI {
 	This is where you perform the action when the API is called, the parameter given is an instance of stdClass, this method should return an instance of stdClass.
 	*/
 	public function action() {
-		global $mybb, $db;
+		global $mybb, $db, $lang;
+		$lang->load("api");
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		require_once MYBB_ROOT . 'inc/functions_post.php';
 		require_once MYBB_ROOT . '/inc/datahandlers/post.php';
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
-		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\"");
-		}
-		if(!checkIfSetAndString($phpData["subject"]) || !checkIfSetAndNumerical($phpData["forumid"]) || !checkIfSetAndString($phpData["message"]) || !checkIfSetAndString($phpData["ipaddress"])) {
-			throw new BadRequestException("\"subject\", \"id\", \"message\", or \"ipaddress\" keys missing or malformed");
-		}
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("subject", "forumid", "message", "ipaddress"));
 		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
 		$queryResult = $db->fetch_array($query);
 		if (!$queryResult) {
-			throw new BadRequestException("Forum ID doesn't exist");
+			throw new BadRequestException($lang->api_id_does_not_exist);
 		}
 		$phpData["forumid"] = (int) $phpData["forumid"];
 		$phpData["prefix"] = checkIfSetAndString($phpData["prefix"]) ? $phpData["prefix"] : null;

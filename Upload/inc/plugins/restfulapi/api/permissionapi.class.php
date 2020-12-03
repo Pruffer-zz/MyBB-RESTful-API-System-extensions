@@ -18,7 +18,7 @@ class PermissionAPI extends RESTfulAPI {
 	public function info() {
 		return array(
 			"name" => "Permission",
-			"description" => "This API exposes permission interface.",
+			"description" => "This API exposes the permission interface.",
 			"default" => "activated"
 		);
 	}
@@ -26,44 +26,29 @@ class PermissionAPI extends RESTfulAPI {
 	This is where you perform the action when the API is called, the parameter given is an instance of stdClass, this method should return an instance of stdClass.
 	*/
 	public function action() {
-		global $mybb, $db;
+		global $mybb, $db, $lang;
+		$lang->load("api");
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$stdClass = new stdClass();
-		$phpData = array();
-		$rawBody = file_get_contents("php://input");
-		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException("Invalid JSON data.");
+		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("forumid"));
+		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
+		$queryResult = $db->fetch_array($query);
+		if (!$queryResult) {
+			throw new BadRequestException($lang->api_id_does_not_exist);
 		}
-		try {
-			foreach($body as $key=>$data) {
-				$phpData[$key] = $data;
-			}
-		}
-		catch (Exception $e) {
-			throw new BadRequestException("Unable to read JSON data.");
-		}
-		$phpContentType = $_SERVER["CONTENT_TYPE"];
-		if ($phpContentType !== "application/json") {
-			throw new BadRequestException("\"content-type\" header missing, or not \"application/json\".");
-		}
-		if(checkIfSetAndString($phpData["forumid"])) {
-			$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
-			$queryResult = $db->fetch_array($query);
-			if (!$queryResult) {
-				throw new BadRequestException("Forum ID doesn't exist.");
-			}
-		}
-		if(checkIfSetAndString($phpAction)) {
-			switch(strtolower($phpAction)) {
+		if(checkIfSetAndString($phpData["action"])) {
+			switch(strtolower($phpData["action"])) {
 				case "moderation" :
 					if(checkIfSetAndNumerical($phpData["forumid"])) {
 						$fid = $db->escape_string($phpData["forumid"]);
 						return (object) forum_permissions($fid, $this->get_user()->uid);
-					}
-					else {
+					} else {
 						return (object) forum_permissions(0, $this->get_user()->uid);
 					}
+				break;
+				default:
+					throw new BadRequestException($lang->api_no_valid_action_specified);
 				break;
 			}
 		} else {

@@ -28,56 +28,24 @@ class FileAPI extends RESTfulAPI {
 		global $mybb, $db, $lang;
 		$lang->load("api");
 		$api = APISystem::get_instance();
-		include "inc/plugins/restfulapi/functions/filefunctions.php";
-		include "inc/plugins/restfulapi/functions/varfunctions.php";
-		include "inc/plugins/restfulapi/functions/stringfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/filefunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$apiKeyProperties = array(
-			"delete" => array("location", true, "json"),
-			"directorylist" => array("location", true, "json"),
-			"download" => array("location, filename, file", true, "json"),
-			"makedirectory" => array("location", false, "json"),
-			"read" => array("location", true, "json"),
-			"upload" => array("location, filename", true, "post"),
-			"write" => array("location, filename, content", true, "json")
+			"delete" => array(array("location"), true, "json"),
+			"directorylist" => array(array("location"), true, "json"),
+			"download" => array(array("location, filename, file"), true, "json"),
+			"makedirectory" => array(array("location"), false, "json"),
+			"read" => array(array("location"), true, "json"),
+			"upload" => array(array("location, filename"), true, "post"),
+			"write" => array(array("location, filename, content"), true, "json")
 		);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$configFileLocation = $mybb->settings["apifilelocation"];
 		$stdClass = new stdClass();
-		$phpData = array();
 		$urlAction = $api->paths[1];
 		if (checkIfKeySetAndInArray($urlAction, $apiKeyProperties)) {
-			$apiDataMethod = $apiKeyProperties[$urlAction][2];
-			switch ($apiDataMethod) {
-				case "json":
-					$rawBody = file_get_contents("php://input");
-					if ($phpContentType !== "application/json") {
-						throw new BadRequestException($lang->api_incorrect_content_type."\"application/json\"");
-					}
-				break;
-				case "post":
-					$rawBody = $_POST["json"];
-					if (!strpos($phpContentType, "multipart/form-data") === 0) {
-						throw new BadRequestException($lang->api_incorrect_content_type."\"multipart/form-data\"");
-					}
-				break;
-			}
-			if (!($body = checkIfJson($rawBody))) {
-				throw new BadRequestException($lang->api_json_invalid);
-			}
-			try {
-				foreach($body as $key=>$data) {
-					$phpData[$key] = $data;
-				}
-			}
-			catch (Exception $e) {
-				throw new BadRequestException($lang->api_json_read_error);
-			}
-			$apiRequiredKeys = explode(", ", $apiKeyProperties[$urlAction][0]);
-			foreach ($apiRequiredKeys as $key) {
-				if (!checkIfSetAndString($phpData[$key], $key)) {
-					throw new BadRequestException($lang->api_key_missing.$apiKeyProperties[$urlAction][0]);
-				}
-			}
+			$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), $apiKeyProperties[$urlAction][2], $_SERVER["CONTENT_TYPE"], $apiKeyProperties[$urlAction][0]);
 			$apiNeedsTraversalCheck = $apiKeyProperties[$urlAction][1];
 			if ($apiNeedsTraversalCheck === true) {
 				if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
