@@ -32,13 +32,13 @@ class FileAPI extends RESTfulAPI {
 		include "inc/plugins/restfulapi/functions/varfunctions.php";
 		include "inc/plugins/restfulapi/functions/stringfunctions.php";
 		$apiKeyProperties = array(
-			"delete" => array("location", 1, "json"),
-			"directorylist" => array("location", 1, "json"),
-			"download" => array("location, filename, file", 1, "json"),
-			"makedirectory" => array("location", 0, "json"),
-			"read" => array("location", 1, "json"),
-			"upload" => array("location, filename", 1, "post"),
-			"write" => array("location, filename, content", 1, "json")
+			"delete" => array("location", true, "json"),
+			"directorylist" => array("location", true, "json"),
+			"download" => array("location, filename, file", true, "json"),
+			"makedirectory" => array("location", false, "json"),
+			"read" => array("location", true, "json"),
+			"upload" => array("location, filename", true, "post"),
+			"write" => array("location, filename, content", true, "json")
 		);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$configFileLocation = $mybb->settings["apifilelocation"];
