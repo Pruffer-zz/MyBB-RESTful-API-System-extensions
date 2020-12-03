@@ -39,7 +39,7 @@ class PermissionAPI extends RESTfulAPI {
 		}
 		if(checkIfSetAndString($phpData["action"])) {
 			switch(strtolower($phpData["action"])) {
-				case "moderation" :
+				case "moderation":
 					if(checkIfSetAndNumerical($phpData["forumid"])) {
 						$fid = $db->escape_string($phpData["forumid"]);
 						return (object) forum_permissions($fid, $this->get_user()->uid);

@@ -32,7 +32,7 @@ class ThreadAPI extends RESTfulAPI {
 		$stdClass = new stdClass();
 		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		switch (strtolower($phpData["action"])) {
-			case "list" :
+			case "list":
 				if(checkIfSetAndString($phpData["threadid"]) && isset($forums[$phpData["threadid"]])) {
 					return (object) $forums[$phpData["threadid"]];
 				}
@@ -40,7 +40,7 @@ class ThreadAPI extends RESTfulAPI {
 					throw new BadRequestException($lang->api_id_not_specified);
 				}
 			break;
-			case "posts" :
+			case "posts":
 				if(checkIfSetAndString($phpData["threadid"])) {
 					$posts = array();
 					$tid = $db->escape_string($phpData["threadid"]);
@@ -53,7 +53,7 @@ class ThreadAPI extends RESTfulAPI {
 					throw new BadRequestException($lang->api_id_not_specified);
 				}
 			break;
-			case "permissions" :
+			case "permissions":
 				$forumpermissions = forum_permissions();
 				return (object) $forumpermissions;
 			default:

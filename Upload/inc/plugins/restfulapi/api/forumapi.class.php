@@ -41,7 +41,7 @@ class ForumAPI extends RESTfulAPI {
 		}
 		$forums = cache_forums();
 		switch (strtolower($phpData["action"])) {
-			case "list" :
+			case "list":
 				if(checkIfSetAndString($phpData["forumid"])) {
 					return (object) $forums[$phpData["forumid"]];
 				}
@@ -49,7 +49,7 @@ class ForumAPI extends RESTfulAPI {
 					return (object) $forums;
 				}
 			break;
-			case "threads" :
+			case "threads":
 				if(checkIfSetAndString($phpData["forumid"])) {
 					$threads = array();
 					$fid = $db->escape_string($phpData["forumid"]);
@@ -63,7 +63,7 @@ class ForumAPI extends RESTfulAPI {
 					throw new BadRequestException($lang->api_id_unable_to_access);
 				}
 			break;
-			case "permissions" :
+			case "permissions":
 				if(checkIfSetAndString($phpData["forumid"]) && $this->is_authenticated()) {
 					return (object) forum_permissions($phpData["forumid"], $this->get_user()->id, $this->get_user()->usergroup);
 				}
