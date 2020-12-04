@@ -145,7 +145,7 @@ class FileAPI extends RESTfulAPI {
 			break;
 			case "write":
 				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
-				if (is_dir($realLocation)) {
+				if (is_dir($realLocation.$phpData["filename"])) {
 					throw new BadRequestException($lang->api_file_is_directory);
 				}
 				$phpData["filename"] = checkFileRename($realLocation, $phpData["filename"], $phpData["overwrite"]);
