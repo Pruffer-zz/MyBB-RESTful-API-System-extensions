@@ -15,10 +15,12 @@ function checkIfFilenameDirectory($filenamePath, $locationPath) {
 		return true;
 	}
 }
-if (file_exists($location.$filename) && $overwrite === "no") {
-	$filename = time().".".$filename;
-	while (file_exists($location.$filename)) {
-		$filename = substr(md5(microtime()),rand(0,26),5).time().".".$filename;
+function checkFileRename($location, $filename, $overwrite) {
+	if (file_exists($location.$filename) && $overwrite === "no") {
+		$filename = time().".".$filename;
+		while (file_exists($location.$filename)) {
+			$filename = substr(md5(microtime()),rand(0,26),5).time().".".$filename;
+		}
 	}
 	return $filename;
 }
