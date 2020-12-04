@@ -34,11 +34,11 @@ class FileAPI extends RESTfulAPI {
 		$apiKeyProperties = array(
 			"delete" => array(array("location"), true, "json"),
 			"directorylist" => array(array("location"), true, "json"),
-			"download" => array(array("location, filename, file"), true, "json"),
+			"download" => array(array("location", "filename", "file"), true, "json"),
 			"makedirectory" => array(array("location"), false, "json"),
 			"read" => array(array("location"), true, "json"),
-			"upload" => array(array("location, filename"), true, "post"),
-			"write" => array(array("location, filename, content"), true, "json")
+			"upload" => array(array("location", "filename"), true, "post"),
+			"write" => array(array("location", "filename", "content"), true, "json")
 		);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$configFileLocation = $mybb->settings["apifilelocation"];
@@ -49,7 +49,7 @@ class FileAPI extends RESTfulAPI {
 			$apiNeedsTraversalCheck = $apiKeyProperties[$urlAction][1];
 			if ($apiNeedsTraversalCheck === true) {
 				if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
-					throw new BadRequestException($lang->api_directory_traversal_failed);
+					throw new BadRequestException($lang->api_directory_traversal_failed.$configFileLocation.$phpData["location"].$configFileLocation);
 				}
 			}
 		} else {
