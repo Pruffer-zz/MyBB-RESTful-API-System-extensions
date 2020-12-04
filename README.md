@@ -1,6 +1,8 @@
 # MyBB-RESTful-API-System-extensions
 
-Extensions for MyBB-RESTful-API-System. Moved over from my fork.
+Extensions for, and a slightly modified version of MyBB-RESTful-API-System. Moved over from my fork.
+
+Outputs only in JSON for now.
 
 Versions of the original APIs modified to use mostly JSON-type input included as well. I'll make docs for those sometime.
 
