@@ -2,6 +2,7 @@
 
 # This file is a part of MyBB RESTful API System plugin - version 0.2
 # Released under the MIT Licence by medbenji (TheGarfield)
+# Modified by Prüffer (avantheim.org)
 
 require_once MYBB_ROOT . 'inc/functions_user.php';
 require_once 'restfulexception.class.php';
@@ -16,27 +17,20 @@ foreach(glob(MYBB_ROOT . "inc/plugins/restfulapi/exception/*.class.php") as $cla
 }
 
 class APISystem {
-	
 	const HTTP_HEADER = 0;
 	const URL_PARAMETER = 1;
 	const BOTH = 2;
 	const DATE_FORMAT = 'Y-m-d H:i:s';
-	
 	private $outputer;
 	public $paths;
-	
 	private $settings = array();
 	private $settings_performed = false;
 	private $settings_changed = false;
-	
 	private $api_instance;
-	
 	private $user_authenticated;
 	private $auth_user_object;
 	private $authentication_performed = false;
-	
 	private static $instance = null;
-	
 	/**
 	 * Set or update a setting with a value
 	 * The setting value might be anything (int, string, array, object or anything) as it would be serialized before saving.
@@ -49,7 +43,6 @@ class APISystem {
 		$this->settings_changed = true;
 		return $old_val;
 	}
-	
 	/**
 	 * Get a setting, if the setting doesn't exist, this function will return $default_return, change that to something else if you want to have a different result.
 	 * If you want to check if a setting exists, use exists_setting($setting_name).
@@ -58,7 +51,6 @@ class APISystem {
 		$this->_perform_settings();
 		return isset($this->settings[$setting_name]) ? $this->settings[$setting_name] : $default_return;
 	}
-	
 	/**
 	 * Delete a setting, if the setting doesn't exist this function won't perform any action
 	 * @return mixed This method would return the value that was assigned to $setting_name if nay, null will be returned otherwise.
@@ -74,7 +66,6 @@ class APISystem {
 			return null;
 		}
 	}
-	
 	/**
 	 * Check if a setting exists already
 	 */
@@ -82,7 +73,6 @@ class APISystem {
 		$this->_perform_settings();
 		return isset($this->settings[$setting_name]);
 	}
-	
 	/**
 	 * This method saves the changed settings, if nothing has changed this method won't do anything. Please do not call this yourself, rather let the APISystem call it, unless you know
 	 * what you're doing.
@@ -110,7 +100,6 @@ class APISystem {
 			$this->settings_changed = false;
 		}
 	}
-	
 	/**
 	 * Redirect to the index page, outputs the message $message before.
 	 * @string $message
@@ -120,7 +109,6 @@ class APISystem {
 		redirect($settings["bburl"] . "/" . INDEX_URL, $message);
 		exit;
 	}
-	
 	/**
 	 * Returns true if the API System is installed, activated and enabled, false otherwise.
 	 */
@@ -128,7 +116,6 @@ class APISystem {
 		global $settings;
 		return defined("IN_RESTFULAPI") && isset($settings["enablerestfulapi"]) && $settings["enablerestfulapi"] == "1";
 	}
-	
 	public function check_api_key_access_limit() {
 		global $db, $cache;
 		$restfulapi_cache = $cache->read("restfulapi");
@@ -175,7 +162,6 @@ class APISystem {
 			// we should't arrive here anyway, so if we by any null chance we're here, leave $passed = false.
 			break;
 		}
-		
 		if($passed) {
 			// ok passed, update
 			$db->update_query("apikeys", array(
@@ -192,7 +178,6 @@ class APISystem {
 			return $keyset["maxreqcounter"] < $keyset["maxreq"];
 		}
 	}
-	
 	public function api_key_increment_counters() {
 		global $db, $cache;
 		$restfulapi_cache = $cache->read("restfulapi");
@@ -208,14 +193,12 @@ class APISystem {
 		), "id='{$db->escape_string($restfulapi_cache['keys'][$api_key]['id'])}'");
 		$cache->update("restfulapi", $restfulapi_cache);
 	}
-	
 	/**
 	 * Is the active request made over a HTTPS connection?
 	 */
 	public function is_https() {
 		return !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off';
 	}
-	
 	/**
 	 * Did the admin choose to activate the API System over HTTPS only?
 	 */
@@ -223,7 +206,6 @@ class APISystem {
 		global $settings;
 		return isset($settings["apihttpsonly"]) ? $settings["apihttpsonly"] == "1" : false;
 	}
-	
 	/**
 	 * Returns standard method (one of : APISystem::HTTP_HEADER, APISystem::URL_PARAMETER or APISystem::BOTH) based on the admin settings
 	 * @return int
@@ -232,7 +214,6 @@ class APISystem {
 		global $settings;
 		return intval($settings["apirequestmethod"]);
 	}
-	
 	/**
 	 * Returns the key length based on the admin settings
 	 * @return int
@@ -242,7 +223,6 @@ class APISystem {
 		$keylengths = array(0 => 8, 1 => 16, 2 => 32, 3 => 64);
 		return $keylengths[$settings["apikeylength"]];
 	}
-	
 	/**
 	 * Returns the declared API key from the active request, based on the admin settings, for example if the admin choosed HTTP Header and the user sent the api key 
 	 * via a URL Parameter, this method wouldn't take that parameter into consideration.
@@ -261,7 +241,6 @@ class APISystem {
 			break;
 		}
 	}
-	
 	/**
 	 * Returns the declared username in the active request, based on the admin settings. Null if nothing found.
 	 * @return string the declared username.
@@ -279,14 +258,12 @@ class APISystem {
 			break;
 		}
 	}
-	
 	/**
 	 * Returns the declared action in the active request, null if nothing was found.
 	 */
 	public function declared_action() {
 		return isset($this->paths[0]) ? $this->paths[0] : null;
 	}
-	
 	/**
 	 * Returns the declared password in the active request, null if nothing was found.
 	 */
@@ -303,7 +280,6 @@ class APISystem {
 			break;
 		}
 	}
-	
 	/**
 	 * Returns the declared output in the active request, null if nothing was found.
 	 */
@@ -320,7 +296,6 @@ class APISystem {
 			break;
 		}
 	}
-	
 	/**
 	 * Returns true if there is a API key declared in the active request, and it's valid. False otherwise.
 	 */
@@ -336,7 +311,6 @@ class APISystem {
 			return isset($api_keys[$api_key]);
 		}
 	}
-	
 	/**
 	 * Performs a RESTfulException instance, based on the current output class.
 	 */
@@ -346,7 +320,6 @@ class APISystem {
 		$outputer->action($ex->getExceptionObject());
 		exit;
 	}
-	
 	/**
 	 * Builds the outputer (RESTfulOutput instance), or create a JSONOutput if nothing was found. If already built, that same instance is returned.
 	 */
@@ -367,14 +340,12 @@ class APISystem {
 		}
 		return $this->outputer;
 	}
-	
 	/**
 	 * Builds the API instance, based on the action parameter in the request (if any), returns the instance or NULL if any error happens. If already built, the same instance is returned.
 	 */
 	public function build_api_instance() {
 		return $this->_build_api_instance_from_class();
 	}
-	
 	/**
 	 * Check if the user specified in the request is authenticated.
 	 */
@@ -382,7 +353,6 @@ class APISystem {
 		$this->_authenticate_user();
 		return $this->user_authenticated;
 	}
-	
 	/**
 	 * Get the authenticated user object, if the user is authenticated, null otherwise.
 	 */
@@ -418,7 +388,6 @@ class APISystem {
 			return $result;
 		}
 	}
-	
 	private function __construct($pathinfo=null) {
 		$pathinfo = is_null($pathinfo) && isset($_SERVER["PATH_INFO"]) && is_string($_SERVER["PATH_INFO"]) ? $_SERVER["PATH_INFO"] : $pathinfo;
 		if(! is_null($pathinfo)) {
@@ -435,11 +404,9 @@ class APISystem {
 			$this->paths = array();
 		}
 	}
-	
 	private function __clone() {
 	
 	}
-	
 	/**
 	 * Get single instance of the APISystem class
 	 */
@@ -449,65 +416,52 @@ class APISystem {
 		}
 		return self::$instance;
 	}
-	
 	private function _declared_api_key_from_http_header() {
 		return isset($_SERVER["HTTP_APIKEY"]) ? $_SERVER["HTTP_APIKEY"] : null;
 	}
-	
 	private function _declared_api_key_from_url_parameter() {
 		global $mybb;
 		return isset($mybb->input["apikey"]) ? $mybb->input["apikey"] : null;
 	}
-	
 	private function _declared_api_key_from_both() {
 		$from_http_header = $this->_declared_api_key_from_http_header();
 		return is_null($from_http_header) ? $this->_declared_api_key_from_url_parameter() : $from_http_header;
 	}
-	
 	private function _declared_user_from_http_header() {
 		$auth_user = isset($_SERVER["PHP_AUTH_USER"]) && is_string($_SERVER["PHP_AUTH_USER"]) ? $_SERVER["PHP_AUTH_USER"] : null;
 		return is_null($auth_user) && isset($_SERVER["HTTP_USERNAME"]) && is_string($_SERVER["HTTP_USERNAME"]) ? $_SERVER["HTTP_USERNAME"] : $auth_user;
 	}
-	
 	private function _declared_user_from_url_parameter() {
 		global $mybb;
 		return isset($mybb->input["username"]) ? $mybb->input["username"] : null;
 	}
-	
 	private function _declared_user_from_both() {
 		$from_http_header = $this->_declared_user_from_http_header();
 		return is_null($from_http_header) ? $this->_declared_user_from_url_parameter() : $from_http_header;
 	}
-	
 	private function _declared_pwd_from_http_header() {
 		$auth_pwd = isset($_SERVER["PHP_AUTH_PW"]) && is_string($_SERVER["PHP_AUTH_PW"]) ? $_SERVER["PHP_AUTH_PW"] : null;
 		return is_null($auth_pwd) && isset($_SERVER["HTTP_PASSWORD"]) && is_string($_SERVER["HTTP_PASSWORD"]) ? $_SERVER["HTTP_PASSWORD"] : $auth_pwd;
 	}
-	
 	private function _declared_pwd_from_url_parameter() {
 		global $mybb;
 		return isset($mybb->input["password"]) ? $mybb->input["password"] : null;
 	}
-	
 	private function _declared_pwd_from_both() {
 		$from_http_header = $this->_declared_pwd_from_http_header();
 		return is_null($from_http_header) ? $this->_declared_pwd_from_url_parameter() : $from_http_header;
 	}
-	
 	private function _declared_output_from_http_header() {
 		return isset($_SERVER["HTTP_OUTPUT"]) ? $_SERVER["HTTP_OUTPUT"] : null;
 	}
-	
 	private function _declared_output_from_url_parameter() {
 		global $mybb;
 		return isset($mybb->input["output"]) ? $mybb->input["output"] : null;
 	}
-	
 	private function _declared_output_from_both() {
 		$from_http_header = $this->_declared_output_from_http_header();
 		return is_null($from_http_header) ? $this->_declared_output_from_url_parameter() : $from_http_header;
 	}
-	
 	private function _authenticate_user($username=null,$password=null) {
 		if($this->authentication_performed) {
 			return;
@@ -530,7 +484,6 @@ class APISystem {
 		}
 		$this->authentication_performed = true;
 	}
-	
 	private function _build_api_instance_from_class($class=null) {
 		global $cache;
 		if(null == $this->api_instance) {
@@ -559,8 +512,6 @@ class APISystem {
 		}
 		return $this->api_instance;
 	}
-	
-	
 	private function _perform_settings() {
 		global $cache;
 		if($this->settings_performed) {
@@ -574,9 +525,6 @@ class APISystem {
 		}
 		$this->settings_performed = true;
 	}
-	
-	
-	
 	public function __destruct() {
 		$this->save_settings();
 	}
