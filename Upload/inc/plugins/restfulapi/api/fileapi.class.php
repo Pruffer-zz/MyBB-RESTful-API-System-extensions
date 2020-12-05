@@ -49,7 +49,7 @@ class FileAPI extends RESTfulAPI {
 			$apiNeedsTraversalCheck = $apiKeyProperties[$urlAction][1];
 			if ($apiNeedsTraversalCheck === true) {
 				if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
-					throw new BadRequestException($lang->api_directory_traversal_failed.$configFileLocation.$phpData["location"].$configFileLocation);
+					throw new BadRequestException($lang->api_directory_traversal_failed);
 				}
 			}
 		} else {
