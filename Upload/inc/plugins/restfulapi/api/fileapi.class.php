@@ -32,13 +32,14 @@ class FileAPI extends RESTfulAPI {
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
 		$apiKeyProperties = array(
-			"delete" => array(array("location"), true, "json"),
-			"directorylist" => array(array("location"), true, "json"),
-			"download" => array(array("location", "filename", "file"), true, "json"),
-			"makedirectory" => array(array("location"), false, "json"),
-			"read" => array(array("location"), true, "json"),
-			"upload" => array(array("location", "filename"), true, "post"),
-			"write" => array(array("location", "filename", "content"), true, "json")
+			"delete" => array(array("location"), true, "json", false),
+			"directorylist" => array(array("location"), true, "json", false),
+			"download" => array(array("location", "filename", "file"), true, "json", array("location", array("filename"))),
+			"makedirectory" => array(array("location"), false, "json", false),
+			"read" => array(array("location"), true, "json", false),
+			"rename" => array(array("location", "filename-old", "filename-new"), true, "json", array("location", array("filename-old", "filename-new"))),
+			"upload" => array(array("location", "filename"), true, "post", array("location", array("filename"))),
+			"write" => array(array("location", "filename", "content"), true, "json", array("location", array("filename")))
 		);
 		$phpContentType = $_SERVER["CONTENT_TYPE"];
 		$configFileLocation = $mybb->settings["apifilelocation"];
@@ -50,6 +51,15 @@ class FileAPI extends RESTfulAPI {
 			if ($apiNeedsTraversalCheck === true) {
 				if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
 					throw new BadRequestException($lang->api_directory_traversal_failed);
+				}
+			}
+			$apiNeedsFilenameDirectoryCheck = $apiKeyProperties[$urlAction][3];
+			if ($apiNeedsFilenameDirectoryCheck !== false) {
+				$location = $phpData[$apiNeedsFilenameDirectoryCheck[0]];
+				foreach ($apiNeedsFilenameDirectoryCheck[1] as $key) {
+					if (!checkIfFilenameDirectory(dirname(realpath($configFileLocation.$location)."/".$phpData[$key]), realpath($configFileLocation.$location))) {
+						throw new BadRequestException($lang->api_key_contains_directory."\"".$key."\"");
+					}
 				}
 			}
 		} else {
@@ -81,9 +91,6 @@ class FileAPI extends RESTfulAPI {
 				}
 			break;
 			case "download":
-				if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpData["location"].$phpData["filename"]), $configFileLocation.$phpData["location"])) {
-					throw new BadRequestException($lang->api_key_contains_directory."\"filename\"");
-				}
 				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
 				$curl = curl_init();
 				curl_setopt($curl, CURLOPT_URL, $phpData["file"]);
@@ -102,13 +109,14 @@ class FileAPI extends RESTfulAPI {
 				}
 			break;
 			case "makedirectory":
-				if (!checkIfTraversal(dirname($configFileLocation.$phpData["location"]), $configFileLocation)) {
+				$realLocation = realpath($configFileLocation.$phpData["location"]);
+				if (!checkIfTraversal(dirname($realLocation), $configFileLocation)) {
 					throw new BadRequestException($lang->api_directory_traversal_failed);
 				}
-				if (file_exists($configFileLocation.$phpData["location"])) {
+				if (file_exists($realLocation)) {
 					throw new BadRequestException($lang->api_file_or_directory_exists);
 				}
-				if (mkdir($configFileLocation.$phpData["location"])) {
+				if (mkdir($realLocation)) {
 					$stdClass->location = $phpData["location"];
 				} else {
 					throw new BadRequestException($lang->api_directory_write_failed);
@@ -127,10 +135,20 @@ class FileAPI extends RESTfulAPI {
 					throw new BadRequestException($lang->api_file_read_failed);
 				}
 			break;
-			case "upload":
-				if (!checkIfFilenameDirectory(dirname($configFileLocation.$phpData["location"].$phpData["filename"]), $configFileLocation.$phpData["location"])) {
-					throw new BadRequestException($lang->api_key_contains_directory."\"filename\"");
+			case "rename":
+				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
+				$phpData["filename-new"] = checkFileRename($realLocation.$phpData["filename-old"], $phpData["filename-new"], $phpData["overwrite"]);
+				if (!file_exists($realLocation.$phpData["filename-old"])) {
+					throw new BadRequestException($lang->api_file_or_directory_does_not_exist);
 				}
+				if (rename($realLocation.$phpData["filename-old"], $realLocation.$phpData["filename-new"])) {
+					$stdClass->location = $phpData["location"];
+					$stdClass->filenameNew = $phpData["filename-new"];
+				} else {
+					throw new BadRequestException($lang->api_file_write_failed);
+				}
+			break;
+			case "upload":
 				if (!isset($_FILES['file'])) {
 					throw new BadRequestException($lang->api_file_missing."\"file\"");
 				}
@@ -145,9 +163,6 @@ class FileAPI extends RESTfulAPI {
 			break;
 			case "write":
 				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
-				if (is_dir($realLocation.$phpData["filename"])) {
-					throw new BadRequestException($lang->api_file_is_directory);
-				}
 				$phpData["filename"] = checkFileRename($realLocation, $phpData["filename"], $phpData["overwrite"]);
 				if ($phpData["append"] === "yes") {
 					$writeMode = "a";
