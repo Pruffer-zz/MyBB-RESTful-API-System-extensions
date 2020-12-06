@@ -9,13 +9,13 @@ function checkIfTraversal($path, $location) {
 	}
 }
 function checkIfFilenameDirectory($filenamePath, $locationPath) {
-	if (realpath($filenamePath) === false || realpath($filenamePath) !== realpath($locationPath)) {
+	if ($filenamePath === false || $filenamePath !== $locationPath) {
 		return false;
 	} else {
 		return true;
 	}
 }
-function checkFileRename($location, $filename, $overwrite) {
+function checkFileRename($location, $filename, $overwrite = "yes") {
 	if (file_exists($location.$filename) && $overwrite === "no") {
 		$filename = time().".".$filename;
 		while (file_exists($location.$filename)) {
