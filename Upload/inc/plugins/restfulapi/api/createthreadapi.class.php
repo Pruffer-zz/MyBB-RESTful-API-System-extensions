@@ -28,8 +28,9 @@ class CreateThreadAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db, $lang;
 		$lang->load("api");
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/errorfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		require_once MYBB_ROOT . 'inc/functions_post.php';
 		require_once MYBB_ROOT . '/inc/datahandlers/post.php';
 		$stdClass = new stdClass();
@@ -37,7 +38,7 @@ class CreateThreadAPI extends RESTfulAPI {
 		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
 		$queryResult = $db->fetch_array($query);
 		if (!$queryResult) {
-			throw new BadRequestException($lang->api_id_does_not_exist);
+			throwBadRequestException($lang->api_id_does_not_exist);
 		}
 		$phpData["forumid"] = (int) $phpData["forumid"];
 		$phpData["prefix"] = checkIfSetAndString($phpData["prefix"]) ? $phpData["prefix"] : null;
@@ -74,7 +75,7 @@ class CreateThreadAPI extends RESTfulAPI {
 		}
 		$posthandler->set_data($data);
 		if (!$posthandler->validate_thread()) {
-			throw new BadRequestException((object) $posthandler->get_friendly_errors());
+			throwBadRequestException((object) $posthandler->get_friendly_errors());
 		}
 		return (object) $posthandler->insert_thread();
 	}

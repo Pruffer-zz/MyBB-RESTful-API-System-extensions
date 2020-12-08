@@ -40,7 +40,7 @@ class AuthenticateAPI extends RESTfulAPI {
 			$query = $db->query("SELECT s.uid FROM " . TABLE_PREFIX . "sessions s WHERE s.sid = '{$sid}'");
 			$result = $db->fetch_array($query);
 			if(empty($result)) {
-				throw new UnauthorizedException($lang->api_not_connected);
+				throwUnauthorizedException($lang->api_not_connected);
 			}
 			else {
 				$uid = $result['uid'];
@@ -53,13 +53,13 @@ class AuthenticateAPI extends RESTfulAPI {
 				");
 				$user = (object) $db->fetch_array($query);
 				if(empty($user)) {
-					throw new UnauthorizedException($lang->api_not_connected);
+					throwUnauthorizedException($lang->api_not_connected);
 				}
 				$user->ismoderator = is_moderator("", "", $uid);
 				return $user;
 			}
 		} else {
-			throw new UnauthorizedException($lang->api_not_connected);
+			throwUnauthorizedException($lang->api_not_connected);
 		}
 	}
 }

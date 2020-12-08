@@ -28,15 +28,16 @@ class ForumAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db, $lang;
 		$lang->load("api");
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/errorfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
 		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		if(checkIfSetAndString($phpData["forumid"])) {
 			$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
 			$queryResult = $db->fetch_array($query);
 			if (!$queryResult) {
-				throw new BadRequestException($lang->api_id_does_not_exist);
+				throwBadRequestException($lang->api_id_does_not_exist);
 			}
 		}
 		$forums = cache_forums();
@@ -60,7 +61,7 @@ class ForumAPI extends RESTfulAPI {
 					return (object) $threads;
 				}
 				else {
-					throw new BadRequestException($lang->api_id_unable_to_access);
+					throwBadRequestException($lang->api_id_unable_to_access);
 				}
 			break;
 			case "permissions":
@@ -68,10 +69,10 @@ class ForumAPI extends RESTfulAPI {
 					return (object) forum_permissions($phpData["forumid"], $this->get_user()->id, $this->get_user()->usergroup);
 				}
 				else {
-					throw new BadRequestException($lang->api_id_unable_to_access);
+					throwBadRequestException($lang->api_id_unable_to_access);
 				}
 			default:
-				throw new BadRequestException($lang->api_no_valid_action_specified);
+				throwBadRequestException($lang->api_no_valid_action_specified);
 			break;
 		}
 	}

@@ -28,14 +28,15 @@ class PermissionAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db, $lang;
 		$lang->load("api");
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/errorfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
 		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("forumid"));
 		$query = $db->simple_select('forums', 'fid', 'fid=\''.$phpData["forumid"].'\'');
 		$queryResult = $db->fetch_array($query);
 		if (!$queryResult) {
-			throw new BadRequestException($lang->api_id_does_not_exist);
+			throwBadRequestException($lang->api_id_does_not_exist);
 		}
 		if(checkIfSetAndString($phpData["action"])) {
 			switch(strtolower($phpData["action"])) {
@@ -48,7 +49,7 @@ class PermissionAPI extends RESTfulAPI {
 					}
 				break;
 				default:
-					throw new BadRequestException($lang->api_no_valid_action_specified);
+					throwBadRequestException($lang->api_no_valid_action_specified);
 				break;
 			}
 		} else {

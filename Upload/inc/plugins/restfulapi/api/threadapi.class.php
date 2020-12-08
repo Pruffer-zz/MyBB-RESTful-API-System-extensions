@@ -27,8 +27,9 @@ class ThreadAPI extends RESTfulAPI {
 	*/
 	public function action() {
 		global $mybb, $db;
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/errorfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
 		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		switch (strtolower($phpData["action"])) {
@@ -37,7 +38,7 @@ class ThreadAPI extends RESTfulAPI {
 					return (object) $forums[$phpData["threadid"]];
 				}
 				else {
-					throw new BadRequestException($lang->api_id_not_specified);
+					throwBadRequestException($lang->api_id_not_specified);
 				}
 			break;
 			case "posts":
@@ -50,14 +51,14 @@ class ThreadAPI extends RESTfulAPI {
 					}
 					return (object) $posts;
 				} else {
-					throw new BadRequestException($lang->api_id_not_specified);
+					throwBadRequestException($lang->api_id_not_specified);
 				}
 			break;
 			case "permissions":
 				$forumpermissions = forum_permissions();
 				return (object) $forumpermissions;
 			default:
-                throw new BadRequestException($lang->api_no_valid_action_specified);
+                throwBadRequestException($lang->api_no_valid_action_specified);
 			break;
 		}
 	}

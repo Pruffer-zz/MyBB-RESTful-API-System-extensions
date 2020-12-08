@@ -28,8 +28,9 @@ class UserAPI extends RESTfulAPI {
 	public function action() {
 		global $mybb, $db, $cache, $lang;
 		$lang->load("api");
-		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/errorfunctions.php";
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/jsoncheckfunctions.php";
+		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$stdClass = new stdClass();
 		$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), "json", $_SERVER["CONTENT_TYPE"], array("action"));
 		switch(strtolower($phpData["action"])) {
@@ -159,7 +160,7 @@ class UserAPI extends RESTfulAPI {
 				return array_values($usergroups);
 			break;
 			default:
-				throw new BadRequestException($lang->api_no_valid_action_specified);
+				throwBadRequestException($lang->api_no_valid_action_specified);
 			break;
 		}
 	}
