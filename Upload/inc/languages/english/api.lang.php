@@ -23,3 +23,4 @@ $l['api_key_contains_directory'] = 'JSON key(s) contain a directory: ';
 $l['api_key_missing'] = 'JSON key(s) potentially missing: ';
 $l['api_not_connected'] = 'Not connected';
 $l['api_no_valid_action_specified'] = 'No valid action specified';
+$l['api_settings_disabled'] = 'API disabled from the plugin settings.';
