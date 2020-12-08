@@ -1,11 +1,23 @@
 # MyBB-RESTful-API-System-extensions
+**Likely not ready for production.** 
 
 Extensions for, and a slightly modified version of MyBB-RESTful-API-System. Moved over from my fork.
 
 Outputs only in JSON for now.
 
-Versions of the original APIs modified to use mostly JSON-type input included as well. I'll make docs for those sometime.
+Versions of the original APIs modified to use JSON input included as well.
 
-`restfulapi.php` file modified to add a setting for the new APIs.
+**Makeshift docs:**
+  - Every modified API needs the same input as it does in the original plugin, but you need to pass it like this in the request body (You still need to pass the `username` and `password` as HTTP headers):
+  ```json
+   {
+    "subject":"Hello!",
+    "content":"This is a test of the 'forum' API.",
+    "forumid":"3",
+    "ipaddress":"192.168.0.1"
+   }
+  ```
+  - As for the `file` APIs, check the `fileapi.class.php` file - starting at line 36, `"api" => array(array(`**`"you_will_need", "these"`** - you can find an array of generally self-explanatory keys you need to access them. Pass these as the request body, too- except for the `upload` api. You'll need to use the `Content-type: multipart/form-data` header there, and pass the same data through a field named `json`. *(If there are any better ways to do this that don't involve headers, please let me know.)*
+  - Except for the API mentioned above, use the `Content-type: application/json` header for all APIs.
 
-I'm most definitely not a security researcher, though. If you absolutely need to use these, **make sure it's safe to do so first**.
+`restfulapi.php` file modified to add 2 settings for the `file` APIs.
