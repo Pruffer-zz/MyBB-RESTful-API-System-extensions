@@ -60,7 +60,7 @@ class FileAPI extends RESTfulAPI {
 				}
 			}
 			$apiNeedsFilenameDirectoryCheck = $apiKeyProperties[$urlAction][3];
-			if ($apiNeedsFilenameDirectoryCheck !== false) {
+			if ($apiNeedsFilenameDirectoryCheck === true) {
 				$location = $phpData[$apiNeedsFilenameDirectoryCheck[0]];
 				foreach ($apiNeedsFilenameDirectoryCheck[1] as $key) {
 					if (!checkIfFilenameDirectory(dirname(realpath($configFileLocation.$location)."/".$phpData[$key]), realpath($configFileLocation.$location))) {
@@ -130,14 +130,14 @@ class FileAPI extends RESTfulAPI {
 				}
 			break;
 			case "makedirectory":
-				$realLocation = realpath($configFileLocation.$phpData["location"]);
-				if (!checkIfTraversal(dirname($realLocation), $configFileLocation)) {
+				$newLocation = $configFileLocation.$phpData["location"];
+				if (!checkIfTraversal(dirname($newLocation), $configFileLocation)) {
 					throwBadRequestException($lang->api_directory_traversal_failed);
 				}
-				if (file_exists($realLocation)) {
+				if (file_exists($newLocation)) {
 					throwBadRequestException($lang->api_file_or_directory_exists);
 				}
-				if (mkdir($realLocation)) {
+				if (mkdir($newLocation)) {
 					$stdClass->location = $phpData["location"];
 				} else {
 					throwBadRequestException($lang->api_directory_write_failed);
