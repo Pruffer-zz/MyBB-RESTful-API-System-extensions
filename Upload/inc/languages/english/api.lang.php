@@ -13,6 +13,7 @@ $l['api_file_or_directory_does_not_exist'] = 'Directory / file doesn\'t exist';
 $l['api_file_or_directory_exists'] = 'Directory / file already exists';
 $l['api_file_read_failed'] = 'File read failed';
 $l['api_file_write_failed'] = 'File write failed';
+$l['api_hash_error'] = 'Unrecognized hashing algorithm, or error calculating hash';
 $l['api_incorrect_content_type'] = 'Missing or incorrect content-type header. Required content-type: ';
 $l['api_id_does_not_exist'] = 'ID doesn\'t exist';
 $l['api_id_not_specified'] = 'ID doesn\'t exist';
