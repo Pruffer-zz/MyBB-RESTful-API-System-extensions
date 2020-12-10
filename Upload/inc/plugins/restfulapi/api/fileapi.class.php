@@ -36,6 +36,7 @@ class FileAPI extends RESTfulAPI {
 			"delete" => array(array("location"), true, "json", false),
 			"directorylist" => array(array("location"), true, "json", false),
 			"download" => array(array("location", "filename", "file"), true, "json", array("location", array("filename"))),
+			"hash" => array(array("location", "algorithm"), true, "json", false),
 			"makedirectory" => array(array("location"), false, "json", false),
 			"read" => array(array("location"), true, "json", false),
 			"rename" => array(array("location", "filename-old", "filename-new"), true, "json", array("location", array("filename-old", "filename-new"))),
@@ -111,6 +112,21 @@ class FileAPI extends RESTfulAPI {
 					$stdClass->filename = $phpData["filename"];
 				} else {
 					throwBadRequestException($lang->api_file_write_failed);
+				}
+			break;
+			case "hash":
+				$realLocation = realpath($configFileLocation.$phpData["location"]);
+				if (is_dir($realLocation)) {
+					throwBadRequestException($lang->api_file_is_directory);
+				}
+				if ($file = fopen($realLocation, "r")) {
+					if ($hash = hash_file($phpData["algorithm"], $realLocation)) {
+						$stdClass->hash = $hash;
+					} else {
+						throwBadRequestException($lang->api_hash_error);
+					}
+				} else {
+					throwBadRequestException($lang->api_file_read_failed);
 				}
 			break;
 			case "makedirectory":
