@@ -1,7 +1,7 @@
 # MyBB-RESTful-API-System-extensions
 **Likely not ready for production.** 
 
-Extensions for, and a slightly modified version of MyBB-RESTful-API-System. Moved over from my fork.
+Extensions for, and a slightly modified version of [MyBB-RESTful-API-System](https://github.com/mohamedbenjelloun/MyBB-RESTful-API-System)
 
 Outputs only in JSON for now.
 
