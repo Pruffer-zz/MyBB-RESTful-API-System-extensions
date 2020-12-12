@@ -34,92 +34,81 @@ class FileAPI extends RESTfulAPI {
 		require_once MYBB_ROOT . "inc/plugins/restfulapi/functions/varfunctions.php";
 		$apiKeyProperties = array(
 			"copy" => array(
-				array("location-old", "location-new", "filename"),
-				array("overwrite", "move"),
-				true,
-				"json",
-				array(
+				requiredStringKeys => array("location-old", "location-new", "filename"),
+				requiredBoolKeys => array("overwrite", "move"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
+				checkForDirectory => array(
 					array("location-new", "location-old"),
 					array("filename")
 				)
 			),
 			"delete" => array(
-				array("location"),
-				false,
-				true,
-				"json",
-				false
+				requiredStringKeys => array("location"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
 			),
 			"directorylist" => array(
-				array("location"),
-				false,
-				true,
-				"json",
-				false
+				requiredStringKeys => array("location"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
 			),
 			"download" => array(
-				array("location", "filename", "file"),
-				array("overwrite"),
-				true, "json",
-				array(
+				requiredStringKeys => array("location", "filename", "file"),
+				requiredBoolKeys => array("overwrite"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
+				checkForDirectory => array(
 					array("location"),
 					array("filename")
 				)
 			),
 			"hash" => array(
-				array("location", "algorithm"),
-				false,
-				true,
-				"json",
-				false
+				requiredStringKeys => array("location", "algorithm"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
 			),
 			"makedirectory" => array(
-				array("location"),
-				false,
-				false,
-				"json",
-				false
+				requiredStringKeys => array("location"),
+				inputMethod => "json",
 			),
 			"read" => array(
-				array("location"),
-				array("overwrite"),
-				true,
-				"json",
-				false
+				requiredStringKeys => array("location"),
+				requiredBoolKeys => array("overwrite"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
 			),
 			"rename" => array(
-				array("location", "filename-old", "filename-new"),
-				array("overwrite"),
-				true,
-				"json",
-				array(
+				requiredStringKeys => array("location", "filename-old", "filename-new"),
+				requiredBoolKeys => array("overwrite"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
+				checkForDirectory => array(
 					array("location"),
 					array("filename-old", "filename-new")
 				)
 			),
 			"upload" => array(
-				array("location", "filename"),
-				array("overwrite"),
-				true,
-				"post",
-				array(
+				requiredStringKeys => array("location", "filename"),
+				requiredBoolKeys => array("overwrite"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "post",
+				checkForDirectory => array(
 					array("location"),
 					array("filename")
 				)
 			),
 			"url" => array(
-				array("location"),
-				false,
-				true,
-				"json",
-				false
+				requiredStringKeys => array("location"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
 			),
 			"write" => array(
-				array("location", "filename", "content"),
-				array("overwrite", "append"),
-				true,
-				"json",
-				array(
+				requiredStringKeys => array("location", "filename", "content"),
+				requiredBoolKeys => array("overwrite", "append"),
+				checkDirectoryTraversal => array("location"),
+				inputMethod => "json",
+				checkForDirectory => array(
 					array("location"),
 					array("filename")
 				)
@@ -133,25 +122,17 @@ class FileAPI extends RESTfulAPI {
 		$stdClass = new stdClass();
 		$urlAction = $api->paths[1];
 		if (checkIfKeySetAndInArray($urlAction, $apiKeyProperties)) {
-			if ($apiKeyProperties[$urlAction][1] === false) {
-				$requiredBoolKeys = array();
-			} else {
-				$requiredBoolKeys = $apiKeyProperties[$urlAction][1];
-			}
-			$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), $apiKeyProperties[$urlAction][3], $_SERVER["CONTENT_TYPE"], $apiKeyProperties[$urlAction][0], $requiredBoolKeys);
-			$apiNeedsTraversalCheck = $apiKeyProperties[$urlAction][2];
-			if ($apiNeedsTraversalCheck === true) {
-				if (!checkIfTraversal($configFileLocation.$phpData["location"], $configFileLocation)) {
+			$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), $apiKeyProperties[$urlAction]["inputMethod"], $_SERVER["CONTENT_TYPE"], $apiKeyProperties[$urlAction]["requiredStringKeys"], $apiKeyProperties[$urlAction]["requiredBoolKeys"]);
+			foreach ($apiKeyProperties[$urlAction]["checkDirectoryTraversal"] as $locationKey) {
+				if (!checkIfTraversal($configFileLocation.$phpData[$locationKey], $configFileLocation)) {
 					throwBadRequestException($lang->api_directory_traversal_failed);
 				}
 			}
-			$apiNeedsFilenameDirectoryCheck = $apiKeyProperties[$urlAction][3];
-			if ($apiNeedsFilenameDirectoryCheck === true) {
-				foreach ($apiNeedsFilenameDirectoryCheck[0] as $locationKey) {
-					foreach ($apiNeedsFilenameDirectoryCheck[1] as $filenameKey) {
-						if (!checkIfFilenameDirectory(dirname(realpath($configFileLocation.$locationKey)."/".$phpData[$key]), realpath($configFileLocation.$locationKey))) {
-							throwBadRequestException($lang->api_key_contains_directory."\"".$key."\"");
-						}
+			$apiNeedsFilenameDirectoryCheck = $apiKeyProperties[$urlAction]["checkForDirectory"];
+			foreach ($apiNeedsFilenameDirectoryCheck[0] as $locationKey) {
+				foreach ($apiNeedsFilenameDirectoryCheck[1] as $filenameKey) {
+					if (!checkIfFilenameDirectory(dirname(realpath($configFileLocation.$phpData[$locationKey])."/".$phpData[$filenameKey]), realpath($configFileLocation.$phpData[$locationKey]))) {
+						throwBadRequestException($lang->api_key_contains_directory."\"".$filenameKey."\"");
 					}
 				}
 			}
