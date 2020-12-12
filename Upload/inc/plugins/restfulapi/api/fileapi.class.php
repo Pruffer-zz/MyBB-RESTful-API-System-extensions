@@ -39,8 +39,8 @@ class FileAPI extends RESTfulAPI {
 				checkDirectoryTraversal => array("location"),
 				inputMethod => "json",
 				checkForDirectory => array(
-					array("location-new", "location-old"),
-					array("filename")
+					locationKey => array("location-new", "location-old"),
+					filenameKey => array("filename")
 				)
 			),
 			"delete" => array(
@@ -59,8 +59,8 @@ class FileAPI extends RESTfulAPI {
 				checkDirectoryTraversal => array("location"),
 				inputMethod => "json",
 				checkForDirectory => array(
-					array("location"),
-					array("filename")
+					locationKey => array("location"),
+					filenameKey => array("filename")
 				)
 			),
 			"hash" => array(
@@ -84,8 +84,8 @@ class FileAPI extends RESTfulAPI {
 				checkDirectoryTraversal => array("location"),
 				inputMethod => "json",
 				checkForDirectory => array(
-					array("location"),
-					array("filename-old", "filename-new")
+					locationKey => array("location"),
+					filenameKey => array("filename-old", "filename-new")
 				)
 			),
 			"upload" => array(
@@ -94,8 +94,8 @@ class FileAPI extends RESTfulAPI {
 				checkDirectoryTraversal => array("location"),
 				inputMethod => "post",
 				checkForDirectory => array(
-					array("location"),
-					array("filename")
+					locationKey => array("location"),
+					filenameKey => array("filename")
 				)
 			),
 			"url" => array(
@@ -109,8 +109,8 @@ class FileAPI extends RESTfulAPI {
 				checkDirectoryTraversal => array("location"),
 				inputMethod => "json",
 				checkForDirectory => array(
-					array("location"),
-					array("filename")
+					locationKey => array("location"),
+					filenameKey => array("filename")
 				)
 			)
 		);
@@ -129,8 +129,8 @@ class FileAPI extends RESTfulAPI {
 				}
 			}
 			$apiNeedsFilenameDirectoryCheck = $apiKeyProperties[$urlAction]["checkForDirectory"];
-			foreach ($apiNeedsFilenameDirectoryCheck[0] as $locationKey) {
-				foreach ($apiNeedsFilenameDirectoryCheck[1] as $filenameKey) {
+			foreach ($apiNeedsFilenameDirectoryCheck["locationKey"] as $locationKey) {
+				foreach ($apiNeedsFilenameDirectoryCheck["filenameKey"] as $filenameKey) {
 					if (!checkIfFilenameDirectory(dirname(realpath($configFileLocation.$phpData[$locationKey])."/".$phpData[$filenameKey]), realpath($configFileLocation.$phpData[$locationKey]))) {
 						throwBadRequestException($lang->api_key_contains_directory."\"".$filenameKey."\"");
 					}
