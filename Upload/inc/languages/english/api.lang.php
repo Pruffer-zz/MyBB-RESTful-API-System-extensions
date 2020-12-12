@@ -7,6 +7,7 @@
 $l['api_directory_is_file'] = 'Specified directory is a file';
 $l['api_directory_traversal_failed'] = 'Directory traversal check failed, or location doesn\'t exist.';
 $l['api_directory_write_failed'] = 'Directory write failed';
+$l['api_file_does_not_exist'] = 'File doesn\'t exist';
 $l['api_file_is_directory'] = 'File is a directory';
 $l['api_file_missing'] = 'File missing: ';
 $l['api_file_or_directory_does_not_exist'] = 'Directory / file doesn\'t exist';
