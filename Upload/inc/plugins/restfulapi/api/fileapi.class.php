@@ -122,7 +122,15 @@ class FileAPI extends RESTfulAPI {
 		$stdClass = new stdClass();
 		$urlAction = $api->paths[1];
 		if (checkIfKeySetAndInArray($urlAction, $apiKeyProperties)) {
-			$phpData = jsonPrecheckAndBodyToArray(file_get_contents("php://input"), $apiKeyProperties[$urlAction]["inputMethod"], $_SERVER["CONTENT_TYPE"], $apiKeyProperties[$urlAction]["requiredStringKeys"], $apiKeyProperties[$urlAction]["requiredBoolKeys"]);
+			switch ($apiKeyProperties[$urlAction]["inputMethod"]) {
+				case "json":
+					$rawBody = file_get_contents("php://input");
+				break;
+				case "post":
+					$rawBody = $_POST["json"];
+				break;
+			}
+			$phpData = jsonPrecheckAndBodyToArray($rawBody, $apiKeyProperties[$urlAction]["inputMethod"], $_SERVER["CONTENT_TYPE"], $apiKeyProperties[$urlAction]["requiredStringKeys"], $apiKeyProperties[$urlAction]["requiredBoolKeys"]);
 			foreach ($apiKeyProperties[$urlAction]["checkDirectoryTraversal"] as $locationKey) {
 				if (!checkIfTraversal($configFileLocation.$phpData[$locationKey], $configFileLocation)) {
 					throwBadRequestException($lang->api_directory_traversal_failed);
@@ -261,12 +269,12 @@ class FileAPI extends RESTfulAPI {
 				}
 			break;
 			case "upload":
-				if (!isset($_FILES['file'])) {
+				if (!isset($_FILES["file"])) {
 					throwBadRequestException($lang->api_file_missing."\"file\"");
 				}
 				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
 				$phpData["filename"] = checkFileRename($realLocation, $phpData["filename"], $phpData["overwrite"]);
-				if (move_uploaded_file($phpFile, $realLocation.$phpData["filename"])) {
+				if (move_uploaded_file($_FILES["file"]["tmp_name"], $realLocation.$phpData["filename"])) {
 					$stdClass->location = $phpData["location"];
 					$stdClass->filename = $phpData["filename"];
 				} else {
@@ -287,10 +295,13 @@ class FileAPI extends RESTfulAPI {
 			case "write":
 				$realLocation = realpath($configFileLocation.$phpData["location"])."/";
 				$phpData["filename"] = checkFileRename($realLocation, $phpData["filename"], $phpData["overwrite"]);
-				if ($phpData["append"] === true) {
-					$writeMode = "a";
-				} else {
-					$writeMode = "w";
+				switch ($phpData["append"]) {
+					case true:
+						$writeMode = "a";
+					break;
+					case false:
+						$writeMode = "w";
+					break;
 				}
 				if ($file = fopen($realLocation.$phpData["filename"], $writeMode)) {
 					fwrite($file, $phpData["content"]);
