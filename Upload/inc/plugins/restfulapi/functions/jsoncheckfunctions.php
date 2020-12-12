@@ -1,5 +1,5 @@
 <?php
-	function jsonPrecheckAndBodyToArray(string $rawBody, string $requiredContentType, string $contentType, array $requiredStringKeys = array(), array $requiredBoolKeys = array()) {
+	function jsonPrecheckAndBodyToArray(string $rawBody, string $requiredContentType, string $contentType, array $requiredStringKeys = array(), $requiredBoolKeys = null) {
 		global $lang;
 		$lang->load("api");
 		if (!($body = checkIfJson($rawBody))) {
