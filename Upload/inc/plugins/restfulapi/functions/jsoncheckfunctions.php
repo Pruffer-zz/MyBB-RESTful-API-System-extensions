@@ -1,19 +1,19 @@
 <?php
-	function jsonPrecheckAndBodyToArray(string $rawBody, string $requiredContentType, string $contentType, array $requiredKeys = array()) {
+	function jsonPrecheckAndBodyToArray(string $rawBody, string $requiredContentType, string $contentType, array $requiredStringKeys = array(), array $requiredBoolKeys = array()) {
 		global $lang;
 		$lang->load("api");
 		if (!($body = checkIfJson($rawBody))) {
-			throw new BadRequestException($lang->api_json_invalid);
+			throwBadRequestException($lang->api_json_invalid);
 		}
 		switch ($requiredContentType) {
 			case "json":
 				if ($contentType !== "application/json") {
-					throw new BadRequestException($lang->api_incorrect_content_type."\"application/json\"");
+					throwBadRequestException($lang->api_incorrect_content_type."\"application/json\"");
 				}
 			break;
 			case "post":
 				if (!strpos($contentType, "multipart/form-data") === 0) {
-					throw new BadRequestException($lang->api_incorrect_content_type."\"multipart/form-data\"");
+					throwBadRequestException($lang->api_incorrect_content_type."\"multipart/form-data\"");
 				}
 			break;
 		}
@@ -23,12 +23,19 @@
 			}
 		}
 		catch (Exception $e) {
-			throw new BadRequestException($lang->api_json_read_error);
+			throwBadRequestException($lang->api_json_read_error);
 		}
-		if (!empty($requiredKeys)) {
-			foreach ($requiredKeys as $key) {
-				if (!checkIfSetAndString($phpData[$key], $key)) {
-					throw new BadRequestException($lang->api_key_missing.implode(", ", $requiredKeys));
+		if (!empty($requiredStringKeys)) {
+			foreach ($requiredStringKeys as $key) {
+				if (!checkIfSetAndString($phpData[$key])) {
+					throwBadRequestException($lang->api_key_missing.implode(", ", $requiredStringKeys));
+				}
+			}
+		}
+		if (!empty($requiredBoolKeys)) {
+			foreach($requiredBoolKeys as $key) {
+				if (!checkIfSetAndBool($phpData[$key])) {
+					throwBadRequestException($lang->api_key_missing.implode(", ", $requiredBoolKeys));
 				}
 			}
 		}

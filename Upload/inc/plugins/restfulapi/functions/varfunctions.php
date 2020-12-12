@@ -6,6 +6,13 @@ function checkIfSetAndString($var) {
 		return false;
 	}
 }
+function checkIfSetAndBool($var) {
+	if (isset($var) && is_bool($var)) {
+		return true;
+	} else {
+		return false;
+	}
+}
 function checkIfSetAndInArray($var, $array) {
 	if (isset($var) && in_array($var, $array)) {
 		return true;
@@ -42,4 +49,3 @@ function getKeyValue($key, $body) {
 	}
 }
 ?>
-
